@@ -65,38 +65,47 @@ RECONFIG="false"
 ONLY_VIEW="false"
 
 # ------------------------------------------------------------------------------
-# LOGGING ENGINE & CLEAN CONSOLE OUTPUT
+# LOGGING ENGINE & CLEAN CONSOLE OUTPUT (WITH LOG SECRET REDACTION)
 # ------------------------------------------------------------------------------
 mkdir -p "${LOG_DIR}" "${CONFIG_DIR}"
 LOG_FILE="${LOG_DIR}/harvest_$(date +'%Y-%m-%d_%H%M%S').log"
 
+sanitize_log_msg() {
+    local msg="$*"
+    msg="$(echo "${msg}" | sed -E 's/(github_pat_[A-Za-z0-9_]+|ghp_[A-Za-z0-9_]+)/[REDACTED_PAT]/g')"
+    echo "${msg}"
+}
+
 log_info() {
     local timestamp="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-    echo "[${timestamp}] ℹ️  $*" >> "${LOG_FILE}"
+    local clean_msg="$(sanitize_log_msg "$*")"
+    echo "[${timestamp}] ℹ️  ${clean_msg}" >> "${LOG_FILE}"
     if [[ "${VERBOSE}" == "true" ]]; then
-        echo "[${timestamp}] ℹ️  $*"
+        echo "[${timestamp}] ℹ️  ${clean_msg}"
     else
-        echo "ℹ️  $*"
+        echo "ℹ️  ${clean_msg}"
     fi
 }
 
 log_warn() {
     local timestamp="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-    echo "[${timestamp}] ⚠️  $*" >> "${LOG_FILE}"
+    local clean_msg="$(sanitize_log_msg "$*")"
+    echo "[${timestamp}] ⚠️  ${clean_msg}" >> "${LOG_FILE}"
     if [[ "${VERBOSE}" == "true" ]]; then
-        echo "[${timestamp}] ⚠️  $*"
+        echo "[${timestamp}] ⚠️  ${clean_msg}"
     else
-        echo "⚠️  $*"
+        echo "⚠️  ${clean_msg}"
     fi
 }
 
 log_err() {
     local timestamp="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-    echo "[${timestamp}] ❌ $*" >> "${LOG_FILE}"
+    local clean_msg="$(sanitize_log_msg "$*")"
+    echo "[${timestamp}] ❌ ${clean_msg}" >> "${LOG_FILE}"
     if [[ "${VERBOSE}" == "true" ]]; then
-        echo "[${timestamp}] ❌ $*"
+        echo "[${timestamp}] ❌ ${clean_msg}"
     else
-        echo "❌ $*"
+        echo "❌ ${clean_msg}"
     fi
 }
 
@@ -109,12 +118,20 @@ save_checkpoint() {
   "script_dir": "${SCRIPT_DIR}"
 }
 EOF
-    log_info "Checkpoint saved: '${state}'"
+    local timestamp="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+    echo "[${timestamp}] ℹ️  Checkpoint saved: '${state}'" >> "${LOG_FILE}"
+    if [[ "${VERBOSE}" == "true" ]]; then
+        echo "[${timestamp}] ℹ️  Checkpoint saved: '${state}'"
+    fi
 }
 
 clear_checkpoint() {
     rm -f "${CHECKPOINT_FILE}" "${AUDIT_FILE}"
-    log_info "Checkpoint cleared."
+    local timestamp="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+    echo "[${timestamp}] ℹ️  Checkpoint cleared." >> "${LOG_FILE}"
+    if [[ "${VERBOSE}" == "true" ]]; then
+        echo "[${timestamp}] ℹ️  Checkpoint cleared."
+    fi
 }
 
 # ------------------------------------------------------------------------------
