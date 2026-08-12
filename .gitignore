@@ -1,6 +1,9 @@
 # Ignore Development & Beta Sandbox Subdirectory
 devel/
 
+# Ignore Project-Specific Local Agent Rules
+.agents/
+
 # Ignore Personal Data Subdirectories & Generated Assets
 input/
 output/
@@ -16,6 +19,8 @@ cv_pl.pdf
 # Local Credentials & Secret Configuration Files
 .vltimate_config*
 .pdf_customization.json
+.conflict_audit.json
+.checkpoint.json
 *.env
 *.env.local
 .credentials
