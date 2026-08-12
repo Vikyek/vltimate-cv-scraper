@@ -112,12 +112,37 @@ fi
 # EMOJI FONT DETECTION & GLYPH INITIALIZATION
 # ------------------------------------------------------------------------------
 has_emoji_font() {
-    if command -v fc-list &>/dev/null; then
-        if fc-list :family 2>/dev/null | grep -iE 'color emoji|emoji|twemoji|joypixels' &>/dev/null; then
+    if command -v fc-match &>/dev/null; then
+        if fc-match -s monospace 2>/dev/null | head -n 3 | grep -iE 'color emoji|emoji|twemoji|joypixels' &>/dev/null; then
             return 0
         fi
     fi
     return 1
+}
+
+patch_fontconfig_emoji() {
+    local conf_file="${HOME}/.config/fontconfig/fonts.conf"
+    mkdir -p "${HOME}/.config/fontconfig"
+    
+    if [[ ! -f "${conf_file}" ]]; then
+        cat <<'EOF' > "${conf_file}"
+<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <alias>
+    <family>monospace</family>
+    <prefer>
+      <family>Noto Color Emoji</family>
+    </prefer>
+  </alias>
+</fontconfig>
+EOF
+    else
+        if ! grep -q "Noto Color Emoji" "${conf_file}"; then
+            sed -i 's|</prefer>|<family>Noto Color Emoji</family></prefer>|' "${conf_file}"
+        fi
+    fi
+    fc-cache -f 2>/dev/null || true
 }
 
 init_glyphs() {
@@ -153,10 +178,10 @@ init_glyphs() {
 # Prompt user if missing emoji font support is detected
 check_and_prompt_emoji_font() {
     if ! has_emoji_font && [[ "${USE_SIMPLE_GLYPHS}" != "true" ]]; then
-        echo -e "${C_GOLD}▲ WARNING: No Color Emoji Font (e.g. Noto Color Emoji) detected on your system!${C_RESET}"
-        echo -e "${C_CYAN}Rich color emojis (🌌, ✨, 💎, 🔒) will render as broken wireframe boxes without a color emoji font.${C_RESET}\n"
+        echo -e "${C_GOLD}▲ WARNING: Color Emoji Font (Noto Color Emoji) is not prioritized in fontconfig!${C_RESET}"
+        echo -e "${C_CYAN}Rich color emojis (🌌, ✨, 💎, 🔒) will render as broken wireframe boxes without fontconfig fallback rules.${C_RESET}\n"
         echo "Options:"
-        echo "  1) Auto-install 'noto-fonts-emoji' via paru/pacman (Recommended)"
+        echo "  1) Auto-configure fontconfig fallback & install 'noto-fonts-emoji' (Recommended)"
         echo "  2) Switch to clean single-width fallback glyphs (✦, ⚡, ◈, ◆)"
         echo "  3) Keep rich color emojis anyway"
         read -r -p "Select option [1-3] (Default: 1): " EMOJI_CHOICE || EMOJI_CHOICE="1"
@@ -164,37 +189,20 @@ check_and_prompt_emoji_font() {
 
         case "${EMOJI_CHOICE}" in
             1)
-                echo -e "${C_CYAN}Installing 'noto-fonts-emoji'...${C_RESET}"
+                echo -e "${C_CYAN}Configuring fontconfig and ensuring 'noto-fonts-emoji' is installed...${C_RESET}"
                 if command -v paru &>/dev/null; then
                     paru -S --noconfirm noto-fonts-emoji || true
                 elif command -v pacman &>/dev/null; then
                     sudo pacman -S --noconfirm noto-fonts-emoji || true
                 fi
                 
-                # Auto-generate fontconfig fallback rule if missing
-                if [[ ! -f "${HOME}/.config/fontconfig/fonts.conf" ]]; then
-                    mkdir -p "${HOME}/.config/fontconfig"
-                    cat <<'EOF' > "${HOME}/.config/fontconfig/fonts.conf"
-<?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-<fontconfig>
-  <alias>
-    <family>monospace</family>
-    <prefer>
-      <family>Noto Color Emoji</family>
-    </prefer>
-  </alias>
-</fontconfig>
-EOF
-                fi
-
-                fc-cache -f 2>/dev/null || true
+                patch_fontconfig_emoji
                 
                 if has_emoji_font; then
-                    echo -e "${C_GREEN}✔ 'noto-fonts-emoji' installed & verified successfully!${C_RESET}\n"
+                    echo -e "${C_GREEN}✔ Fontconfig configured & 'noto-fonts-emoji' verified successfully!${C_RESET}\n"
                     USE_SIMPLE_GLYPHS="false"
                 else
-                    echo -e "${C_GOLD}▲ Font installation completed, but fontconfig has not reloaded in your active subshell.${C_RESET}"
+                    echo -e "${C_GOLD}▲ Fontconfig updated, but active terminal subshell requires restart for color emojis.${C_RESET}"
                     echo -e "${C_CYAN}  Using clean fallback glyphs for this run so output isn't broken. Rich emojis will load on terminal restart!${C_RESET}\n"
                     USE_SIMPLE_GLYPHS="true"
                 fi
