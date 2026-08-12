@@ -9,13 +9,14 @@ An automated, privacy-conscious resume architecture, technical intelligence harv
 - **Unified Interactive Bilingual HTML (`output/cv.html`)**: Consolidates English and Polish pages into a single interactive document with on-the-fly language toggling, theme switching, and RODO clause injectors.
 - **Save & Export Customization**: Click "Save Config" in the HTML toolbar to export your visual themes, font density, language preferences, and RODO choices directly into `.pdf_customization.json`.
 - **AI Auto-Translation Engine**: Select or write-in any target language (e.g. Spanish, German, French, Italian, Japanese). Displays a clear translation warning banner and disables PDF export until `agy` completes the translation.
+- **Private Configuration Vault (`gemini-config-vault`)**: Synchronizes master learned rules (`GEMINI.md`), machine-specific environment scopes, and preferences to a private GitHub repository (`https://github.com/Vikyek/gemini-config-vault.git`) located at `~/.gemini/config/`.
 - **Development Sandbox (`devel/`) & Safe Promotion**: Contains experimental beta features (Font density selector, typography switcher, ATS pre-flight scorecard, QR code generator). Isolated from main Git tracking via `.gitignore`. Features `devel/promote_devel.sh` for safe, single-command promotion to production.
 - **Subdirectory Tree & Snapshot Lifecycle**:
   - `input/`: Baseline technical profile data automatically rotated from previous runs to build upon.
   - `output/`: Freshly generated resume assets (`raw_technical_profile.md`, `cv.html`, `cv_en.pdf`, `cv_pl.pdf`).
   - `archives/`: Timestamped compressed snapshots (`snapshot_YYYY-MM-DD_HHMMSS.tar.gz`) of previous runs.
 - **Automated Data Harvesting**: Scans local OS specs, shell command history, git configurations, and remote GitHub profile repositories (`github.com/Vikyek`).
-- **Autonomous Repository Sync**: Automatically syncs public code repositories (`vltimate-cv-scraper`) and private encrypted vault repositories (`vltimate-cv-vault`) on GitHub via API tokens/SSH without manual prompts.
+- **Autonomous Repository Sync**: Automatically syncs public code repositories (`vltimate-cv-scraper`) and private encrypted vault repositories (`vltimate-cv-vault` & `gemini-config-vault`) on GitHub via API tokens/SSH without manual prompts.
 - **Headless PDF Generation**: Automatically renders pixel-perfect PDF files (`output/cv_en.pdf` and `output/cv_pl.pdf`) using Google Chrome. Saves preferences in `.pdf_customization.json`.
 - **Job Description (JD) Tailoring (`--tailor <file_or_url>`)**: Dynamically aligns your resume summary, keyword tag cloud, and experience bullet points specifically for a target role.
 - **Visual Experience Diff Tracker (`--diff`)**: Tracks newly harvested technical experience across runs (`harvest_diff.log`).
@@ -55,16 +56,20 @@ An automated, privacy-conscious resume architecture, technical intelligence harv
 
 ---
 
-## 🚀 Development & Beta Promotion Workflow
+## 🚀 CLI Usage & Options
 
-To test experimental beta features (Font density, typography selector, ATS scorecard, QR code generator):
-```bash
-# 1. Edit or run beta scripts inside devel/
-cd devel/
-./harvest_cv.sh --pdf
+```text
+USAGE:
+  ./harvest_cv.sh [OPTIONS]
 
-# 2. Safely promote tested beta features to PRODUCTION master
-./promote_devel.sh
+OPTIONS:
+  -h, --help                Show help documentation
+  -t, --tailor <FILE|URL>   Tailor summary, keywords, & bullet points to a Job Description
+  -p, --pdf                 Force automated headless PDF export (output/cv_en.pdf & cv_pl.pdf)
+  -d, --diff                Generate visual experience diff log (harvest_diff.log)
+  -e, --encrypt-mode <TYPE> Set encryption backend: 'aes' (OpenSSL AES-256) or 'gpg'
+  --gui                     Open customization GUI in Google Chrome to set themes/RODO options
+  -c, --config              Reconfigure GitHub token & private cloud sync options
 ```
 
 ---
