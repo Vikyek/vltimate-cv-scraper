@@ -126,18 +126,9 @@ EOF
 # EMOJI FONT DETECTION & GLYPH INITIALIZATION
 # ------------------------------------------------------------------------------
 has_emoji_font() {
-    # Check 1: Is a color emoji font prioritized in monospace fallback chain?
-    if command -v fc-match &>/dev/null; then
-        if fc-match -s monospace 2>/dev/null | head -n 5 | grep -iE 'color emoji|emoji|twemoji|joypixels' &>/dev/null; then
-            return 0
-        fi
-    fi
-    # Check 2: Is a color emoji font installed at all? (weaker check)
     if command -v fc-list &>/dev/null; then
-        if fc-list :family 2>/dev/null | grep -iE 'color emoji|emoji|twemoji|joypixels' &>/dev/null; then
-            # Font exists on disk but isn't prioritized for monospace — still broken
-            return 1
-        fi
+        fc-list :family 2>/dev/null | grep -iE 'color emoji|emoji|twemoji|joypixels' &>/dev/null
+        return $?
     fi
     return 1
 }
@@ -183,7 +174,7 @@ check_and_prompt_emoji_font() {
         echo -e "${C_GOLD}▲ WARNING: No Color Emoji Font (e.g. Noto Color Emoji) detected on your system!${C_RESET}"
         echo -e "${C_CYAN}Rich color emojis (🌌, ✨, 💎, 🔒) may render as broken wireframe boxes in your terminal.${C_RESET}\n"
         echo "Options:"
-        echo "  1) Auto-install 'noto-fonts-emoji' via paru/pacman & configure fontconfig (Recommended)"
+        echo "  1) Auto-install 'noto-fonts-emoji' & relaunch terminal (Recommended)"
         echo "  2) Switch to clean single-width fallback glyphs (✦, ⚡, ◈, ◆)"
         echo "  3) Keep rich color emojis anyway"
         read -r -p "Select option [1-3] (Default: 1): " EMOJI_CHOICE || EMOJI_CHOICE="1"
@@ -191,38 +182,18 @@ check_and_prompt_emoji_font() {
 
         case "${EMOJI_CHOICE}" in
             1)
-                echo -e "${C_CYAN}Installing 'noto-fonts-emoji' and updating fontconfig...${C_RESET}"
+                echo -e "${C_CYAN}Installing 'noto-fonts-emoji'...${C_RESET}"
                 if command -v paru &>/dev/null; then
                     paru -S --noconfirm noto-fonts-emoji || true
                 elif command -v pacman &>/dev/null; then
                     sudo pacman -S --noconfirm noto-fonts-emoji || true
-                fi
-                
-                # Auto-generate or patch fontconfig fallback rule
-                local conf_file="${HOME}/.config/fontconfig/fonts.conf"
-                mkdir -p "${HOME}/.config/fontconfig"
-                if [[ ! -f "${conf_file}" ]]; then
-                    cat <<'EOF' > "${conf_file}"
-<?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-<fontconfig>
-  <alias>
-    <family>monospace</family>
-    <prefer>
-      <family>Noto Color Emoji</family>
-    </prefer>
-  </alias>
-</fontconfig>
-EOF
-                elif ! grep -q "Noto Color Emoji" "${conf_file}"; then
-                    sed -i 's|</prefer>|<family>Noto Color Emoji</family></prefer>|' "${conf_file}"
                 fi
 
                 fc-cache -f 2>/dev/null || true
                 USE_SIMPLE_GLYPHS="false"
                 save_config
                 
-                echo -e "${C_GREEN}✔ 'noto-fonts-emoji' installed & fontconfig configured!${C_RESET}"
+                echo -e "${C_GREEN}✔ 'noto-fonts-emoji' installed!${C_RESET}"
                 echo -e "${C_CYAN}  Relaunching in a fresh terminal for rich emoji rendering...${C_RESET}\n"
                 sleep 1
                 
