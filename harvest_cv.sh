@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Vltimate CV Scraper v2.1
+# Vltimate CV Scraper v2.2
 # Usage: ./harvest_cv.sh [OPTIONS]
 # Options:
 #   -h, --help                Show help documentation
 #   -t, --tailor <FILE|URL>   Tailor CV specifically to a job description file/URL
 #   -p, --pdf                 Force automated headless PDF export (cv_en.pdf / cv_pl.pdf)
 #   -d, --diff                Generate visual experience diff log (harvest_diff.log)
+#   -i, --interactive         Enable interactive prompt edit & conflict resolution loop
 #   -e, --encrypt-mode <TYPE> Encryption mode: aes (OpenSSL, default) or gpg
 #   --gui                     Open customization GUI in Google Chrome to set themes/RODO options
 #   -c, --config              Reconfigure GitHub token & private cloud sync options
@@ -37,6 +38,7 @@ PLAIN_ARCHIVE="${SCRIPT_DIR}/personal_data.tar.gz"
 TAILOR_TARGET=""
 FORCE_PDF="false"
 ENABLE_DIFF="false"
+INTERACTIVE_LOOP="true"
 ENCRYPT_MODE="aes"
 OPEN_GUI="false"
 RECONFIG="false"
@@ -46,7 +48,7 @@ RECONFIG="false"
 # ------------------------------------------------------------------------------
 show_help() {
     cat <<EOF
-Vltimate CV Scraper v2.1 - Technical Intelligence Harvester & ATS Engine
+Vltimate CV Scraper v2.2 - Technical Intelligence Harvester & ATS Engine
 
 USAGE:
   ./harvest_cv.sh [OPTIONS]
@@ -54,8 +56,9 @@ USAGE:
 OPTIONS:
   -h, --help                Show this help message and exit
   -t, --tailor <FILE|URL>   Tailor summary, keywords, & bullet points to a Job Description
-  -p, --pdf                 Force automated headless PDF export (cv_en.pdf / cv_pl.pdf)
+  -p, --pdf                 Force automated headless PDF export (output/cv_en.pdf & cv_pl.pdf)
   -d, --diff                Generate visual experience diff log (harvest_diff.log)
+  -i, --interactive         Enable interactive prompt edit & conflict resolution loop via agy
   -e, --encrypt-mode <TYPE> Set encryption backend: 'aes' (OpenSSL AES-256) or 'gpg'
   --gui                     Open customization GUI in Google Chrome to set themes/RODO options
   -c, --config              Reconfigure GitHub token & private cloud sync options
@@ -63,7 +66,7 @@ OPTIONS:
 EXAMPLES:
   ./harvest_cv.sh --pdf --diff
   ./harvest_cv.sh --tailor ./job_offer.txt
-  ./harvest_cv.sh --encrypt-mode gpg
+  ./harvest_cv.sh --interactive
 EOF
     exit 0
 }
@@ -74,6 +77,7 @@ while [[ $# -gt 0 ]]; do
         -t|--tailor) TAILOR_TARGET="$2"; shift 2 ;;
         -p|--pdf) FORCE_PDF="true"; shift ;;
         -d|--diff) ENABLE_DIFF="true"; shift ;;
+        -i|--interactive) INTERACTIVE_LOOP="true"; shift ;;
         -e|--encrypt-mode) ENCRYPT_MODE="$2"; shift 2 ;;
         --gui) OPEN_GUI="true"; shift ;;
         -c|--config) RECONFIG="true"; shift ;;
@@ -82,7 +86,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "======================================================================"
-echo "🚀 Vltimate CV Scraper v2.1"
+echo "🚀 Vltimate CV Scraper v2.2"
 echo "Working Directory: ${SCRIPT_DIR}"
 echo "======================================================================"
 
@@ -117,7 +121,6 @@ check_dependencies() {
 check_dependencies
 mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}" "${ARCHIVE_DIR}"
 
-# Remove any legacy standalone top-level html/pdf files to keep directory clean
 rm -f "${SCRIPT_DIR}/cv_en.html" "${SCRIPT_DIR}/cv_pl.html" "${SCRIPT_DIR}/cv_en.pdf" "${SCRIPT_DIR}/cv_pl.pdf" "${SCRIPT_DIR}/raw_technical_profile.md"
 
 # ------------------------------------------------------------------------------
@@ -144,7 +147,7 @@ EOF
 fi
 
 # ------------------------------------------------------------------------------
-# STEP 2: Persistent Configuration & Autonomous GitHub Vault Repo Creation
+# STEP 2: Persistent Configuration & Autonomous GitHub Repo Sync
 # ------------------------------------------------------------------------------
 CLOUD_SYNC_ENABLED="false"
 GITHUB_USER=""
@@ -182,7 +185,7 @@ else
     source "${CONFIG_FILE}"
 fi
 
-# Autonomous Creation & Syncing of Public Code Repository (Never asking user!)
+# Autonomous Creation & Syncing of Public Code Repository
 if [[ -n "${GITHUB_USER}" && -n "${GITHUB_TOKEN}" ]]; then
     curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
          -d "{\"name\":\"${PUBLIC_REPO}\",\"private\":false}" \
@@ -274,12 +277,57 @@ if [[ -n "${TAILOR_TARGET}" ]]; then
     PROMPT="${PROMPT} Tailor the summary, keyword badges, and experience bullet points specifically for this Job Description: ${JD_CONTENT}."
 fi
 
-PROMPT="${PROMPT} Perform harvesting across system, shell history, git repos, and GitHub profile. Save updated knowledge base into '${OUTPUT_PROFILE}' and generate unified bilingual interactive HTML resume into '${OUTPUT_CV_HTML}' (containing both English and Polish pages, theme picker, and RODO selector)."
+PROMPT="${PROMPT} Perform harvesting across system, shell history, git repos, and GitHub profile. Save updated knowledge base into '${OUTPUT_PROFILE}' and generate unified bilingual interactive HTML resume into '${OUTPUT_CV_HTML}'."
 
 echo "======================================================================"
 echo "⚡ Harvesting technical intelligence with agy..."
 echo "======================================================================"
 agy --dangerously-skip-permissions --print "${PROMPT}"
+
+# ------------------------------------------------------------------------------
+# STEP 5B: Interactive Prompt Edit, Conflict Resolution & Revision Loop
+# ------------------------------------------------------------------------------
+if [[ "${INTERACTIVE_LOOP}" == "true" ]]; then
+    while true; do
+        echo ""
+        echo "======================================================================"
+        echo "✍️ Interactive Refinement & Revision Menu (via agy)"
+        echo "======================================================================"
+        echo "Current harvested profile and HTML resume are ready in output/."
+        echo "  1) Approve current CV & Profile (Proceed to PDF Export & Encryption)"
+        echo "  2) Prompt agy to revise / edit specific section (e.g. expand experience)"
+        echo "  3) Resolve conflicting technical data or dates"
+        echo "  4) Add custom pointers, notes, or new technical entries"
+        echo "  5) Re-run full intelligence harvest"
+        echo -n "Select option [1-5]: "
+        read -r EDIT_CHOICE
+
+        case "${EDIT_CHOICE}" in
+            1)
+                echo "✅ Profile & CV approved by user."
+                break
+                ;;
+            2|3|4)
+                echo ""
+                echo -n "💬 Enter your instruction / correction / pointer for agy: "
+                read -r USER_FEEDBACK
+                if [[ -n "${USER_FEEDBACK}" ]]; then
+                    REVISE_PROMPT="Read '${SYSTEM_PROMPT_FILE}', '${OUTPUT_PROFILE}', and '${OUTPUT_CV_HTML}'. Apply this specific user instruction/correction: ${USER_FEEDBACK}. Update both '${OUTPUT_PROFILE}' and '${OUTPUT_CV_HTML}' accordingly."
+                    echo "⚡ Executing revision pass with agy..."
+                    agy --dangerously-skip-permissions --print "${REVISE_PROMPT}"
+                    echo "✅ Revision applied! Re-evaluating..."
+                fi
+                ;;
+            5)
+                echo "🔄 Re-running full intelligence harvest..."
+                agy --dangerously-skip-permissions --print "${PROMPT}"
+                ;;
+            *)
+                echo "Invalid option. Select 1 to approve."
+                ;;
+        esac
+    done
+fi
 
 # ------------------------------------------------------------------------------
 # STEP 6: Headless PDF Generation & Visual Diff Tracking
@@ -382,5 +430,5 @@ else
 fi
 
 echo "======================================================================"
-echo "🎉 Vltimate CV Scraper v2.1 workflow complete!"
+echo "🎉 Vltimate CV Scraper v2.2 workflow complete!"
 echo "======================================================================"

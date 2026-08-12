@@ -1,20 +1,23 @@
 .\" Manpage for Vltimate CV Scraper
-.TH VLTIMATE-CV-SCRAPER 1 "12 August 2026" "v2.1" "Vltimate CV Scraper Manual"
+.TH VLTIMATE-CV-SCRAPER 1 "12 August 2026" "v2.2" "Vltimate CV Scraper Manual"
 .SH NAME
-vltimate-cv-scraper \- Technical Intelligence Harvester, Subdirectory Lifecycle & ATS Resume Engine
+vltimate-cv-scraper \- Technical Intelligence Harvester, Interactive Revision Loop & ATS Resume Engine
 .SH SYNOPSIS
 .B harvest_cv.sh
 [\fIOPTIONS\fR]
 .SH DESCRIPTION
 .B Vltimate CV Scraper
-is an automated, privacy-conscious technical intelligence harvester and ATS resume engine. It scans local system architecture, shell command history, git configurations, and remote GitHub repositories to build an unformatted master knowledge base (\fBoutput/raw_technical_profile.md\fR), a unified interactive bilingual HTML resume (\fBoutput/cv.html\fR) containing both English and Polish pages, and headless PDF exports (\fBoutput/cv_en.pdf\fR and \fBoutput/cv_pl.pdf\fR).
+is an automated, privacy-conscious technical intelligence harvester and ATS resume engine. It scans local system architecture, shell command history, git configurations, and remote GitHub repositories to build an unformatted master knowledge base (\fBoutput/raw_technical_profile.md\fR), a unified interactive bilingual HTML resume (\fBoutput/cv.html\fR), and headless PDF exports (\fBoutput/cv_en.pdf\fR and \fBoutput/cv_pl.pdf\fR).
 
-It manages a structured data tree (\fBinput/\fR, \fBoutput/\fR, \fBarchives/\fR), creates timestamped snapshot backups of prior runs, rotates past results into the input directory to build upon, and supports AES-256 and GPG encryption, job description tailoring, visual experience diff tracking, persistent credential management, and autonomous private cloud synchronization on GitHub.
+It includes an interactive revision loop (\fB\-i, \-\-interactive\fR) allowing users to resolve data conflicts, request section edits, add custom pointers, or refine text live via \fBagy\fR prompting before finalizing PDF rendering and encryption.
 
 .SH OPTIONS
 .TP
 .BR \-h ", " \-\-help
 Display command usage and options summary.
+.TP
+.BR \-i ", " \-\-interactive
+Enable interactive prompt edit, conflict resolution, and revision loop via \fBagy\fR.
 .TP
 .BR \-t ", " \-\-tailor " \fI<FILE_OR_URL>\fR"
 Tailor resume summary, keyword badges, and experience bullet points specifically to a job description text file or web URL.

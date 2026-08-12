@@ -1,4 +1,4 @@
-# Vltimate CV Scraper v2.1
+# Vltimate CV Scraper v2.2
 
 An automated, privacy-conscious resume architecture, technical intelligence harvester, and job-tailoring suite built for software engineers, game developers, and systems specialists. Powered by **Antigravity CLI (`agy`)**, **OpenSSL AES-256 / GPG encryption**, **Google Chrome headless PDF rendering**, and **Tailwind CSS single-column ATS layout engine**.
 
@@ -6,6 +6,7 @@ An automated, privacy-conscious resume architecture, technical intelligence harv
 
 ## 🌟 Key Features
 
+- **Interactive Refinement & Conflict Resolution Loop (`-i`, `--interactive`)**: After harvesting, an interactive menu allows you to prompt `agy` to resolve technical conflicts, expand specific sections, fix date discrepancies, or add custom pointers/notes live before finalizing PDFs and encryption.
 - **Unified Interactive Bilingual HTML (`output/cv.html`)**: Consolidates English and Polish pages into a single interactive document with on-the-fly language toggling, theme switching, and RODO clause injectors.
 - **Save & Export Customization**: Click "Save Config" in the HTML toolbar to export your visual themes, font density, language preferences, and RODO choices directly into `.pdf_customization.json`.
 - **AI Auto-Translation Engine**: Select or write-in any target language (e.g. Spanish, German, French, Italian, Japanese). Displays a clear translation warning banner and disables PDF export until `agy` completes the translation.
@@ -63,6 +64,7 @@ USAGE:
 
 OPTIONS:
   -h, --help                Show help documentation
+  -i, --interactive         Enable interactive prompt edit & conflict resolution loop via agy
   -t, --tailor <FILE|URL>   Tailor summary, keywords, & bullet points to a Job Description
   -p, --pdf                 Force automated headless PDF export (output/cv_en.pdf & cv_pl.pdf)
   -d, --diff                Generate visual experience diff log (harvest_diff.log)
