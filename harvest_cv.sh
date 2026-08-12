@@ -502,20 +502,43 @@ log_info "Starting Vltimate CV Scraper v3.5"
 echo -e "${C_CYAN}────────────────────────────────────────────────────────────────────────${C_RESET}"
 
 # ------------------------------------------------------------------------------
-# MIGRATE LEGACY CONFIG FILES TO './config/' SUBDIR
+# MIGRATE LEGACY CONFIG FILES TO './config/' SUBDIR (SILENT UNLESS VERBOSE)
 # ------------------------------------------------------------------------------
-if [[ -f "${SCRIPT_DIR}/.vltimate_config.env" && ! -f "${CONFIG_FILE}" ]]; then
-    cp -f "${SCRIPT_DIR}/.vltimate_config.env" "${CONFIG_FILE}"
-    chmod 600 "${CONFIG_FILE}"
-    log_info "Migrated legacy config to './config/vltimate_config.env'"
+if [[ -f "${SCRIPT_DIR}/.vltimate_config.env" ]]; then
+    if [[ ! -f "${CONFIG_FILE}" ]]; then
+        cp -f "${SCRIPT_DIR}/.vltimate_config.env" "${CONFIG_FILE}"
+        chmod 600 "${CONFIG_FILE}"
+    fi
+    rm -f "${SCRIPT_DIR}/.vltimate_config.env"
+    local_ts="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+    echo "[${local_ts}] ℹ️  Migrated legacy config to './config/vltimate_config.env'" >> "${LOG_FILE}"
+    if [[ "${VERBOSE}" == "true" ]]; then
+        echo -e "${C_DIM}[${local_ts}]${C_RESET} ${C_CYAN}ℹ️  Migrated legacy config to './config/vltimate_config.env'${C_RESET}"
+    fi
 fi
-if [[ -f "${SCRIPT_DIR}/.pdf_customization.json" && ! -f "${PDF_CUSTOM_FILE}" ]]; then
-    cp -f "${SCRIPT_DIR}/.pdf_customization.json" "${PDF_CUSTOM_FILE}"
-    log_info "Migrated legacy PDF customization to './config/pdf_customization.json'"
+
+if [[ -f "${SCRIPT_DIR}/.pdf_customization.json" ]]; then
+    if [[ ! -f "${PDF_CUSTOM_FILE}" ]]; then
+        cp -f "${SCRIPT_DIR}/.pdf_customization.json" "${PDF_CUSTOM_FILE}"
+    fi
+    rm -f "${SCRIPT_DIR}/.pdf_customization.json"
+    local_ts="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+    echo "[${local_ts}] ℹ️  Migrated legacy PDF customization to './config/pdf_customization.json'" >> "${LOG_FILE}"
+    if [[ "${VERBOSE}" == "true" ]]; then
+        echo -e "${C_DIM}[${local_ts}]${C_RESET} ${C_CYAN}ℹ️  Migrated legacy PDF customization to './config/pdf_customization.json'${C_RESET}"
+    fi
 fi
-if [[ -f "${SCRIPT_DIR}/.checkpoint.json" && ! -f "${CHECKPOINT_FILE}" ]]; then
-    cp -f "${SCRIPT_DIR}/.checkpoint.json" "${CHECKPOINT_FILE}"
-    log_info "Migrated legacy checkpoint to './config/checkpoint.json'"
+
+if [[ -f "${SCRIPT_DIR}/.checkpoint.json" ]]; then
+    if [[ ! -f "${CHECKPOINT_FILE}" ]]; then
+        cp -f "${SCRIPT_DIR}/.checkpoint.json" "${CHECKPOINT_FILE}"
+    fi
+    rm -f "${SCRIPT_DIR}/.checkpoint.json"
+    local_ts="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+    echo "[${local_ts}] ℹ️  Migrated legacy checkpoint to './config/checkpoint.json'" >> "${LOG_FILE}"
+    if [[ "${VERBOSE}" == "true" ]]; then
+        echo -e "${C_DIM}[${local_ts}]${C_RESET} ${C_CYAN}ℹ️  Migrated legacy checkpoint to './config/checkpoint.json'${C_RESET}"
+    fi
 fi
 
 # ------------------------------------------------------------------------------
