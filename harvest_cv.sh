@@ -3,8 +3,8 @@
 # Vltimate CV Scraper v3.5 (Production Master)
 # Usage: ./harvest_cv.sh [OPTIONS]
 # Features in v3.5:
-#   - Automatic Emoji Font Detection: Probes fontconfig for Color Emoji support
-#   - Auto-Fix & Fallback Prompt: Auto-installs 'noto-fonts-emoji' OR toggles clean fallback glyphs
+#   - Automatic Emoji Font Detection: Probes fontconfig (fc-list) for Color Emoji support
+#   - Auto-Install & Refresh: Auto-installs 'noto-fonts-emoji', patches fonts.conf & runs fc-cache
 #   - Automatic Customization Pick-Up: Auto-detects & moves downloaded GUI configs from ~/Downloads/
 #   - Dynamic Source Summary: Compact, glowing summary instead of repetitive lines
 #   - Log Path & Flag: Log path hidden from startup; accessible via -l / --log flag
@@ -108,41 +108,29 @@ if [[ -f "${CONFIG_FILE}" ]]; then
     source "${CONFIG_FILE}"
 fi
 
+# Helper: persist current config values to disk
+save_config() {
+    cat <<EOF > "${CONFIG_FILE}"
+CLOUD_SYNC_ENABLED="${CLOUD_SYNC_ENABLED}"
+GITHUB_USER="${GITHUB_USER}"
+GITHUB_TOKEN="${GITHUB_TOKEN}"
+VAULT_REPO="${VAULT_REPO}"
+PUBLIC_REPO="${PUBLIC_REPO}"
+USE_SIMPLE_GLYPHS="${USE_SIMPLE_GLYPHS}"
+EOF
+    chmod 600 "${CONFIG_FILE}"
+}
+
 # ------------------------------------------------------------------------------
 # EMOJI FONT DETECTION & GLYPH INITIALIZATION
 # ------------------------------------------------------------------------------
 has_emoji_font() {
-    if command -v fc-match &>/dev/null; then
-        if fc-match -s monospace 2>/dev/null | head -n 3 | grep -iE 'color emoji|emoji|twemoji|joypixels' &>/dev/null; then
+    if command -v fc-list &>/dev/null; then
+        if fc-list :family 2>/dev/null | grep -iE 'color emoji|emoji|twemoji|joypixels' &>/dev/null; then
             return 0
         fi
     fi
     return 1
-}
-
-patch_fontconfig_emoji() {
-    local conf_file="${HOME}/.config/fontconfig/fonts.conf"
-    mkdir -p "${HOME}/.config/fontconfig"
-    
-    if [[ ! -f "${conf_file}" ]]; then
-        cat <<'EOF' > "${conf_file}"
-<?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-<fontconfig>
-  <alias>
-    <family>monospace</family>
-    <prefer>
-      <family>Noto Color Emoji</family>
-    </prefer>
-  </alias>
-</fontconfig>
-EOF
-    else
-        if ! grep -q "Noto Color Emoji" "${conf_file}"; then
-            sed -i 's|</prefer>|<family>Noto Color Emoji</family></prefer>|' "${conf_file}"
-        fi
-    fi
-    fc-cache -f 2>/dev/null || true
 }
 
 init_glyphs() {
@@ -177,11 +165,11 @@ init_glyphs() {
 
 # Prompt user if missing emoji font support is detected
 check_and_prompt_emoji_font() {
-    if ! has_emoji_font && [[ "${USE_SIMPLE_GLYPHS}" != "true" ]]; then
-        echo -e "${C_GOLD}▲ WARNING: Color Emoji Font (Noto Color Emoji) is not prioritized in fontconfig!${C_RESET}"
-        echo -e "${C_CYAN}Rich color emojis (🌌, ✨, 💎, 🔒) will render as broken wireframe boxes without fontconfig fallback rules.${C_RESET}\n"
+    if ! has_emoji_font; then
+        echo -e "${C_GOLD}▲ WARNING: No Color Emoji Font (e.g. Noto Color Emoji) detected on your system!${C_RESET}"
+        echo -e "${C_CYAN}Rich color emojis (🌌, ✨, 💎, 🔒) may render as broken wireframe boxes in your terminal.${C_RESET}\n"
         echo "Options:"
-        echo "  1) Auto-configure fontconfig fallback & install 'noto-fonts-emoji' (Recommended)"
+        echo "  1) Auto-install 'noto-fonts-emoji' via paru/pacman & configure fontconfig (Recommended)"
         echo "  2) Switch to clean single-width fallback glyphs (✦, ⚡, ◈, ◆)"
         echo "  3) Keep rich color emojis anyway"
         read -r -p "Select option [1-3] (Default: 1): " EMOJI_CHOICE || EMOJI_CHOICE="1"
@@ -189,23 +177,36 @@ check_and_prompt_emoji_font() {
 
         case "${EMOJI_CHOICE}" in
             1)
-                echo -e "${C_CYAN}Configuring fontconfig and ensuring 'noto-fonts-emoji' is installed...${C_RESET}"
+                echo -e "${C_CYAN}Installing 'noto-fonts-emoji' and updating fontconfig...${C_RESET}"
                 if command -v paru &>/dev/null; then
                     paru -S --noconfirm noto-fonts-emoji || true
                 elif command -v pacman &>/dev/null; then
                     sudo pacman -S --noconfirm noto-fonts-emoji || true
                 fi
                 
-                patch_fontconfig_emoji
-                
-                if has_emoji_font; then
-                    echo -e "${C_GREEN}✔ Fontconfig configured & 'noto-fonts-emoji' verified successfully!${C_RESET}\n"
-                    USE_SIMPLE_GLYPHS="false"
-                else
-                    echo -e "${C_GOLD}▲ Fontconfig updated, but active terminal subshell requires restart for color emojis.${C_RESET}"
-                    echo -e "${C_CYAN}  Using clean fallback glyphs for this run so output isn't broken. Rich emojis will load on terminal restart!${C_RESET}\n"
-                    USE_SIMPLE_GLYPHS="true"
+                # Auto-generate or patch fontconfig fallback rule
+                local conf_file="${HOME}/.config/fontconfig/fonts.conf"
+                mkdir -p "${HOME}/.config/fontconfig"
+                if [[ ! -f "${conf_file}" ]]; then
+                    cat <<'EOF' > "${conf_file}"
+<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <alias>
+    <family>monospace</family>
+    <prefer>
+      <family>Noto Color Emoji</family>
+    </prefer>
+  </alias>
+</fontconfig>
+EOF
+                elif ! grep -q "Noto Color Emoji" "${conf_file}"; then
+                    sed -i 's|</prefer>|<family>Noto Color Emoji</family></prefer>|' "${conf_file}"
                 fi
+
+                fc-cache -f -v 2>/dev/null || true
+                USE_SIMPLE_GLYPHS="false"
+                echo -e "${C_GREEN}✔ 'noto-fonts-emoji' installed and font cache refreshed!${C_RESET}\n"
                 ;;
             2)
                 USE_SIMPLE_GLYPHS="true"
@@ -220,7 +221,8 @@ check_and_prompt_emoji_font() {
     init_glyphs
 }
 
-init_glyphs
+# Run emoji font check & prompt BEFORE CLI parser or print_banner
+check_and_prompt_emoji_font
 
 # ------------------------------------------------------------------------------
 # LOGGING ENGINE & AESTHETIC CONSOLE OUTPUT (LOG SECRET REDACTION)
@@ -402,19 +404,6 @@ run_with_spinner() {
     fi
 }
 
-# Helper: persist current config values to disk
-save_config() {
-    cat <<EOF > "${CONFIG_FILE}"
-CLOUD_SYNC_ENABLED="${CLOUD_SYNC_ENABLED}"
-GITHUB_USER="${GITHUB_USER}"
-GITHUB_TOKEN="${GITHUB_TOKEN}"
-VAULT_REPO="${VAULT_REPO}"
-PUBLIC_REPO="${PUBLIC_REPO}"
-USE_SIMPLE_GLYPHS="${USE_SIMPLE_GLYPHS}"
-EOF
-    chmod 600 "${CONFIG_FILE}"
-}
-
 # ------------------------------------------------------------------------------
 # CLI ARGUMENT PARSER
 # ------------------------------------------------------------------------------
@@ -461,9 +450,6 @@ while [[ $# -gt 0 ]]; do
         *) echo "Unknown option: $1"; show_help ;;
     esac
 done
-
-# Check emoji font support and prompt if needed
-check_and_prompt_emoji_font
 
 # View Log Mode (-l / --log)
 if [[ "${VIEW_LOG}" == "true" ]]; then
@@ -874,7 +860,7 @@ if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" || "${RESUM
         save_checkpoint "STATE_HARVEST_COMPLETED"
     else
         log_err "Intelligence harvesting failed or timed out."
-        log_warn "You can retry by running './harvest_cv.sh' again (checkpoint will offer resume)."
+        log_warn "You can retry by running './harvest_cv.sh' again."
         echo ""
         echo "  1) Retry harvest now"
         echo "  2) Continue anyway (use existing data in './output/' if available)"
