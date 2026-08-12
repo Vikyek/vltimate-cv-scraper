@@ -142,9 +142,9 @@ init_glyphs() {
 
 # Prompt user if missing emoji font support is detected
 check_and_prompt_emoji_font() {
-    if ! has_emoji_font && [[ -z "${USE_SIMPLE_GLYPHS}" ]]; then
+    if ! has_emoji_font && [[ "${USE_SIMPLE_GLYPHS}" != "true" ]]; then
         echo -e "${C_GOLD}▲ WARNING: No Color Emoji Font (e.g. Noto Color Emoji) detected on your system!${C_RESET}"
-        echo -e "${C_CYAN}Rich color emojis (🌌, ✨, 💎, 🔒) may render as split wireframe boxes in your active terminal.${C_RESET}\n"
+        echo -e "${C_CYAN}Rich color emojis (🌌, ✨, 💎, 🔒) will render as broken wireframe boxes without a color emoji font.${C_RESET}\n"
         echo "Options:"
         echo "  1) Auto-install 'noto-fonts-emoji' via paru/pacman (Recommended)"
         echo "  2) Switch to clean single-width fallback glyphs (✦, ⚡, ◈, ◆)"
@@ -180,18 +180,14 @@ EOF
 
                 fc-cache -f 2>/dev/null || true
                 
-                # Save false for future runs, but use clean glyphs for current live terminal session
-                USE_SIMPLE_GLYPHS="false"
-                save_config
-                
-                echo -e "${C_GREEN}✔ 'noto-fonts-emoji' installed & font cache reloaded!${C_RESET}"
-                echo -e "${C_CYAN}  (Using clean fallback glyphs for this active terminal session to prevent cached wireframe glitches.${C_RESET}"
-                echo -e "${C_CYAN}   Rich color emojis will activate automatically on your next terminal restart!)${C_RESET}\n"
-                
-                # Force simple glyphs for current session only
-                USE_SIMPLE_GLYPHS="true"
-                init_glyphs
-                return 0
+                if has_emoji_font; then
+                    echo -e "${C_GREEN}✔ 'noto-fonts-emoji' installed & verified successfully!${C_RESET}\n"
+                    USE_SIMPLE_GLYPHS="false"
+                else
+                    echo -e "${C_GOLD}▲ Font installation completed, but fontconfig has not reloaded in your active subshell.${C_RESET}"
+                    echo -e "${C_CYAN}  Using clean fallback glyphs for this run so output isn't broken. Rich emojis will load on terminal restart!${C_RESET}\n"
+                    USE_SIMPLE_GLYPHS="true"
+                fi
                 ;;
             2)
                 USE_SIMPLE_GLYPHS="true"
