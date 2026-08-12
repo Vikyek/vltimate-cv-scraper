@@ -4,13 +4,15 @@ cv_en.html
 cv_pl.html
 output/
 
-# Personal Data Encrypted & Packed Archives (Tracked only if encrypted archive is produced)
+# Ignore Local Credentials & Secret Configuration Files
+.vltimate_config*
+*.env
+*.env.local
+.credentials
+
+# Personal Data Encrypted & Packed Archives (Tracked only in Private Vault Repo)
 personal_data*.tar.gz
 *.tmp
 *.log
 .DS_Store
 *.swp
-
-# Environment variables & local secrets
-.env
-.env.local
