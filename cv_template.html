@@ -571,9 +571,9 @@
       const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = '.pdf_customization.json';
+      a.download = 'pdf_customization.json';
       a.click();
-      alert("💾 Customization configuration exported to .pdf_customization.json!");
+      alert("✨ Customization saved! Resume in your terminal to apply choices.");
     }
 
     window.onload = function() {

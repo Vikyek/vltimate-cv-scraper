@@ -57,3 +57,9 @@
 - **Manual Target Flag**: `-a` / `--add-source <TARGET>` allows passing extra scrapable local paths, URLs, or notes.
 - **Dynamic Heuristic Search Loop**: `discover_dynamic_sources` probes `$PATH`, `~/.local/bin/`, `~/bin/`, `~/Scripts/`, `/opt/`, `~/.config/`, hidden local git repos, `.md` files, environment variables, systemd journal events, and package manager logs for un-predetermined scrapable places.
 - **TrueColor Cyberpunk/Trans ANSI Styling**: Console output features 24-bit TrueColor ANSI color palettes (Cyan `#5BCEFA`, Pink `#F5A9B8`, Magenta `#FF66CC`, Violet `#AA55FF`, Mint `#50FA7B`, Gold `#FFB86C`), UTF-8 box-drawing art, and glowing multicolored animated spinners matching candidate dotfile aesthetic preferences (`hyfetch`).
+
+## 14. Customization Auto-Pickup, Log Viewing & User-Friendly Recovery
+- **Downloads Auto-Pickup**: `pickup_downloaded_customization` automatically detects and moves exported customization configs (`pdf_customization*.json`) from `~/Downloads/` into `./config/pdf_customization.json`.
+- **Log File Viewing**: Startup log path output is hidden by default; execution logs are viewable via `-l` / `--log` flag.
+- **User-Friendly Interrupted Run Recovery**: Recovery prompts use clean human language ("Resume previous session") without displaying internal technical checkpoint strings.
+- **Silent Snapshot Archive Logging**: Snapshot archive creation is logged to `./logs/` silently and only printed to console output when `--verbose` (`-v`) is enabled.

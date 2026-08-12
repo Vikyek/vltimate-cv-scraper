@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Vltimate CV Scraper v3.4 (Production Master)
+# Vltimate CV Scraper v3.5 (Production Master)
 # Usage: ./harvest_cv.sh [OPTIONS]
-# Changes in v3.4:
-#   - Aesthetic Makeover: Cyberpunk/Trans 24-bit TrueColor ANSI styling & box art
-#   - Knowledge Base Viewer: --db / -k / --knowledge flag to view database
-#   - Manual Target Addition: -a / --add-source <TARGET> flag for extra scrapable places
-#   - Dynamic Heuristic Discovery: Automatic search for un-predetermined scrapable artifacts
-#   - Configs moved to './config/' subdir with tracked default templates
-#   - Masked secret input (shows * characters with tput stderr redirection)
-#   - Crash-resilient run_with_spinner & exit trap secret cleanup
+# Changes in v3.5:
+#   - Automatic Customization Pick-Up: Auto-detects & moves downloaded GUI configs from ~/Downloads/
+#   - Dynamic Source Summary: Compact, glowing summary instead of repetitive lines
+#   - Log Path & Flag: Log path hidden from startup; accessible via -l / --log flag
+#   - User-Friendly Interrupted Run: Simplified resume prompt without technical checkpoint jargon
+#   - Silent Snapshot Logging: Snapshot archive creation hidden from stdout unless verbose (-v)
+#   - Magical Aesthetics: Enhanced TrueColor ANSI gradients, starry glyphs, and box art
 # ==============================================================================
 
 set -euo pipefail
@@ -44,14 +43,14 @@ PLAIN_ARCHIVE="${SCRIPT_DIR}/personal_data.tar.gz"
 C_RESET='\033[0m'
 C_BOLD='\033[1m'
 C_DIM='\033[2m'
-C_CYAN='\033[38;2;91;206;250m'    # Trans Cyan #5BCEFA
-C_PINK='\033[38;2;245;169;184m'   # Trans Pink #F5A9B8
-C_WHITE='\033[38;2;255;255;255m'  # Pure White #FFFFFF
+C_CYAN='\033[38;2;91;206;250m'     # Trans Cyan #5BCEFA
+C_PINK='\033[38;2;245;169;184m'    # Trans Pink #F5A9B8
+C_WHITE='\033[38;2;255;255;255m'   # Pure White #FFFFFF
 C_MAGENTA='\033[38;2;255;102;204m' # Neon Magenta #FF66CC
-C_VIOLET='\033[38;2;170;85;255m'  # Neon Violet #AA55FF
-C_GREEN='\033[38;2;80;250;123m'   # Mint Green #50FA7B
-C_GOLD='\033[38;2;255;184;108m'   # Warm Gold #FFB86C
-C_RED='\033[38;2;255;85;85m'      # Bright Red #FF5555
+C_VIOLET='\033[38;2;170;85;255m'   # Neon Violet #AA55FF
+C_GREEN='\033[38;2;80;250;123m'    # Mint Green #50FA7B
+C_GOLD='\033[38;2;255;184;108m'    # Warm Gold #FFB86C
+C_RED='\033[38;2;255;85;85m'       # Bright Red #FF5555
 
 cleanup_secrets() {
     unset GITHUB_TOKEN DECRYPT_PASS ENCRYPT_PASS ENCRYPT_PASS1 ENCRYPT_PASS2 GH_TOKEN VAULT_PAT 2>/dev/null || true
@@ -81,6 +80,7 @@ OPEN_GUI="false"
 RECONFIG="false"
 ONLY_VIEW="false"
 VIEW_DB="false"
+VIEW_LOG="false"
 MANUAL_SOURCES=()
 
 # ------------------------------------------------------------------------------
@@ -91,7 +91,7 @@ LOG_FILE="${LOG_DIR}/harvest_$(date +'%Y-%m-%d_%H%M%S').log"
 
 print_banner() {
     echo -e "${C_CYAN}┌────────────────────────────────────────────────────────────────────────┐${C_RESET}"
-    echo -e "${C_CYAN}│  ${C_BOLD}${C_MAGENTA}🌌 VLTIMATE CV SCRAPER v3.4${C_RESET}${C_CYAN} — Technical Intelligence & ATS Engine │${C_RESET}"
+    echo -e "${C_CYAN}│  ${C_BOLD}${C_MAGENTA}🌌 VLTIMATE CV SCRAPER v3.5${C_RESET}${C_CYAN} — Technical Intelligence & ATS Engine │${C_RESET}"
     echo -e "${C_CYAN}│  ${C_PINK}Autonomous Scraping • Multi-Shell Mining • Cross-Site Discovery${C_RESET}${C_CYAN}      │${C_RESET}"
     echo -e "${C_CYAN}└────────────────────────────────────────────────────────────────────────┘${C_RESET}"
 }
@@ -157,6 +157,26 @@ clear_checkpoint() {
     echo "[${timestamp}] ℹ️  Checkpoint cleared." >> "${LOG_FILE}"
     if [[ "${VERBOSE}" == "true" ]]; then
         echo -e "${C_DIM}[${timestamp}]${C_RESET} ${C_VIOLET}◈ Checkpoint cleared.${C_RESET}"
+    fi
+}
+
+# ------------------------------------------------------------------------------
+# AUTOMATIC DOWNLOADED CUSTOMIZATION PICK-UP & AUTO-MOVE
+# ------------------------------------------------------------------------------
+pickup_downloaded_customization() {
+    local found_file=""
+    # Search for downloaded customization file in ~/Downloads/
+    for f in "${HOME}/Downloads/pdf_customization"* "${HOME}/Downloads/.pdf_customization"*; do
+        if [[ -f "$f" ]]; then
+            found_file="$f"
+        fi
+    done
+
+    if [[ -n "${found_file}" ]]; then
+        cp -f "${found_file}" "${PDF_CUSTOM_FILE}"
+        chmod 600 "${PDF_CUSTOM_FILE}"
+        rm -f "${found_file}"
+        log_info "✨ Automatically picked up updated customization config from Downloads!"
     fi
 }
 
@@ -239,6 +259,7 @@ show_help() {
     echo -e "${C_BOLD}OPTIONS:${C_RESET}"
     echo -e "  ${C_CYAN}-h, --help${C_RESET}                 Show help documentation"
     echo -e "  ${C_CYAN}-v, --verbose${C_RESET}              Print ISO timestamps & detailed trace in console"
+    echo -e "  ${C_CYAN}-l, --log${C_RESET}                  View the latest execution log file in terminal"
     echo -e "  ${C_CYAN}-k, --db, --knowledge${C_RESET}      View the synced technical knowledge database in terminal"
     echo -e "  ${C_CYAN}-a, --add-source <TARGET>${C_RESET} Point to an additional scrapable path, URL, or note"
     echo -e "  ${C_CYAN}--view${C_RESET}                     Open local preview HTML resume in Google Chrome"
@@ -256,6 +277,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         -h|--help) show_help ;;
         -v|--verbose) VERBOSE="true"; shift ;;
+        -l|--log) VIEW_LOG="true"; shift ;;
         -k|--db|--knowledge) VIEW_DB="true"; shift ;;
         -a|--add-source) MANUAL_SOURCES+=("$2"); shift 2 ;;
         --view) ONLY_VIEW="true"; shift ;;
@@ -269,6 +291,22 @@ while [[ $# -gt 0 ]]; do
         *) echo "Unknown option: $1"; show_help ;;
     esac
 done
+
+# View Log Mode (-l / --log)
+if [[ "${VIEW_LOG}" == "true" ]]; then
+    LATEST_LOG="$(ls -t "${LOG_DIR}"/harvest_*.log 2>/dev/null | head -n 1 || echo '')"
+    if [[ -n "${LATEST_LOG}" && -f "${LATEST_LOG}" ]]; then
+        echo -e "${C_CYAN}📜 Opening latest execution log file: '${LATEST_LOG}'...${C_RESET}"
+        if command -v micro &>/dev/null; then
+            micro "${LATEST_LOG}"
+        else
+            less -R "${LATEST_LOG}"
+        fi
+    else
+        echo -e "${C_RED}❌ No log files found in '${LOG_DIR}'.${C_RESET}"
+    fi
+    exit 0
+fi
 
 # View Knowledge Base Mode (--db / -k)
 if [[ "${VIEW_DB}" == "true" ]]; then
@@ -305,8 +343,7 @@ if [[ "${ONLY_VIEW}" == "true" ]]; then
 fi
 
 print_banner
-log_info "Starting Vltimate CV Scraper v3.4"
-log_info "Execution Log File: '${LOG_FILE}'"
+log_info "Starting Vltimate CV Scraper v3.5"
 echo -e "${C_CYAN}────────────────────────────────────────────────────────────────────────${C_RESET}"
 
 # ------------------------------------------------------------------------------
@@ -327,24 +364,22 @@ if [[ -f "${SCRIPT_DIR}/.checkpoint.json" && ! -f "${CHECKPOINT_FILE}" ]]; then
 fi
 
 # ------------------------------------------------------------------------------
-# INTERRUPTED RUN RECOVERY & CHECKPOINT RESTART
+# INTERRUPTED SESSION RECOVERY (USER-FRIENDLY RECOVERY PROMPT)
 # ------------------------------------------------------------------------------
 RESUME_STATE=""
 if [[ -f "${CHECKPOINT_FILE}" ]]; then
     LAST_STATE="$(grep '"state"' "${CHECKPOINT_FILE}" | cut -d'"' -f4 || echo '')"
-    LAST_TIME="$(grep '"timestamp"' "${CHECKPOINT_FILE}" | cut -d'"' -f4 || echo '')"
     echo ""
-    log_warn "Interrupted run detected from previous session!"
-    log_warn "Last completed checkpoint: '${LAST_STATE}' at ${LAST_TIME}"
-    echo "  1) Resume execution from last checkpoint ('${LAST_STATE}')"
-    echo "  2) Discard checkpoint and start fresh run"
+    log_warn "✨ Interrupted session detected from previous run!"
+    echo "  1) Resume previous session"
+    echo "  2) Start fresh run"
     read -r -p "Select recovery option [1/2]: " RECOVERY_CHOICE || RECOVERY_CHOICE="2"
     if [[ "${RECOVERY_CHOICE}" == "1" ]]; then
         RESUME_STATE="${LAST_STATE}"
-        log_info "Resuming workflow from checkpoint '${RESUME_STATE}'..."
+        log_info "Resuming session from last saved state..."
     else
         clear_checkpoint
-        log_info "Discarded checkpoint. Starting fresh run..."
+        log_info "Discarded previous session state. Starting fresh run..."
     fi
 fi
 
@@ -380,40 +415,30 @@ rm -f "${SCRIPT_DIR}/cv_en.html" "${SCRIPT_DIR}/cv_pl.html" "${SCRIPT_DIR}/cv_en
 # DYNAMIC HEURISTIC UN-PREDETERMINED DISCOVERY ENGINE
 # ------------------------------------------------------------------------------
 discover_dynamic_sources() {
-    log_info "Executing dynamic heuristic search for un-predetermined scrapable places..."
-    local DYNAMIC_FOUND=()
-    
-    # 1. Custom User Binaries & Script Directories
+    local SCRIPT_COUNT=0
+    local REPO_COUNT=0
+    local EXTRA_COUNT=${#MANUAL_SOURCES[@]}
+
     for d in "${HOME}/.local/bin" "${HOME}/bin" "${HOME}/Scripts" "/opt"; do
         if [[ -d "$d" ]]; then
-            DYNAMIC_FOUND+=("Local script directory: '$d'")
+            SCRIPT_COUNT=$((SCRIPT_COUNT + 1))
+            echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] ℹ️  Dynamic source identified: Script Directory '$d'" >> "${LOG_FILE}"
         fi
     done
     
-    # 2. Local Git Repositories across Home Directory
-    local REPO_COUNT=0
     while IFS= read -r gitdir; do
         if [[ -n "$gitdir" ]]; then
             local repo_path="$(dirname "$gitdir")"
-            DYNAMIC_FOUND+=("Local Git repository: '${repo_path}'")
+            echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] ℹ️  Dynamic source identified: Git Repository '${repo_path}'" >> "${LOG_FILE}"
             REPO_COUNT=$((REPO_COUNT + 1))
             if [[ $REPO_COUNT -ge 15 ]]; then break; fi
         fi
     done < <(find "${HOME}" -maxdepth 3 -name ".git" 2>/dev/null || true)
     
-    # 3. Environment Variables ($PATH, custom exports)
-    DYNAMIC_FOUND+=("Active shell environment variables (\$PATH)")
-
-    # 4. Manually Specified Targets via -a / --add-source
-    if [[ ${#MANUAL_SOURCES[@]} -gt 0 ]]; then
-        for s in "${MANUAL_SOURCES[@]}"; do
-            DYNAMIC_FOUND+=("Manually specified target: '${s}'")
-        done
+    log_info "✨ Dynamic Intelligence Discovery: Found ${REPO_COUNT} Local Git Repos, ${SCRIPT_COUNT} Binary Directories, and Shell Environments"
+    if [[ $EXTRA_COUNT -gt 0 ]]; then
+        log_info "✨ Manual Targets Added: ${EXTRA_COUNT} custom paths/URLs ingested"
     fi
-
-    for src in "${DYNAMIC_FOUND[@]}"; do
-        log_info "Dynamic source identified [NEW]: ${src}"
-    done
 }
 
 discover_dynamic_sources
@@ -421,6 +446,9 @@ discover_dynamic_sources
 # ------------------------------------------------------------------------------
 # STEP 1: Customization Memory & GUI Trigger Logic
 # ------------------------------------------------------------------------------
+# Auto-check Downloads before prompting
+pickup_downloaded_customization
+
 if [[ -f "${PDF_CUSTOM_FILE}" && "${OPEN_GUI}" != "true" ]]; then
     log_info "Existing layout customization found in './config/pdf_customization.json'."
     read -r -p "🎨 Re-open Chrome HTML GUI to change layout options? [y/N]: " OPEN_GUI_PROMPT || OPEN_GUI_PROMPT="n"
@@ -460,6 +488,9 @@ EOF
     fi
     echo ""
     read -r -p "🎨 Adjust options in Chrome, click 'Save Config', then press Enter to continue: " _UNUSED || true
+    
+    # Auto-pick up downloaded customization config from Downloads after GUI closes
+    pickup_downloaded_customization
 fi
 
 # ------------------------------------------------------------------------------
@@ -581,7 +612,11 @@ if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" ]]; then
     SNAPSHOT_FILE="${ARCHIVE_DIR}/snapshot_${TIMESTAMP}.tar.gz"
 
     if [[ -f "${OUTPUT_PROFILE}" || -f "${INPUT_PROFILE}" ]]; then
-        log_info "Creating snapshot archive: './archives/snapshot_${TIMESTAMP}.tar.gz'"
+        local_ts="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+        echo "[${local_ts}] ℹ️  Creating snapshot archive: './archives/snapshot_${TIMESTAMP}.tar.gz'" >> "${LOG_FILE}"
+        if [[ "${VERBOSE}" == "true" ]]; then
+            echo -e "${C_DIM}[${local_ts}]${C_RESET} ${C_VIOLET}◈ Snapshot archive created: './archives/snapshot_${TIMESTAMP}.tar.gz'${C_RESET}"
+        fi
         tar -czf "${SNAPSHOT_FILE}" -C "${SCRIPT_DIR}" "input" "output" 2>/dev/null || true
         cp -rf "${OUTPUT_DIR}"/* "${INPUT_DIR}/" 2>/dev/null || true
         save_checkpoint "STATE_SNAPSHOT_CREATED"
@@ -865,5 +900,5 @@ else
 fi
 
 echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
-log_info "Vltimate CV Scraper v3.4 workflow complete!"
+log_info "Vltimate CV Scraper v3.5 workflow complete!"
 echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"

@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Viktoria Jędrzejczyk - Systems Engineer & Low-Level Hardware Specialist CV</title>
+  
+  <!-- Tailwind CSS for high fidelity responsive layout -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Polished typography fonts matching professional resumes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Source+Sans+3:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons for modern, sharp contact details -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+      --primary-color: #0284c7; /* Modern CV Blue */
+      --primary-light: #f0f9ff;
+      --text-dark: #1e293b;
+      --text-muted: #475569;
+      --border-light: #e2e8f0;
+      --accent-line: #cbd5e1;
+    }
+
+    /* Interactive Color Themes */
+    .theme-blue {
+      --primary-color: #0284c7;
+      --primary-light: #f0f9ff;
+    }
+    .theme-purple {
+      --primary-color: #9333ea;
+      --primary-light: #faf5ff;
+    }
+    .theme-emerald {
+      --primary-color: #059669;
+      --primary-light: #ecfdf5;
+    }
+    .theme-charcoal {
+      --primary-color: #334155;
+      --primary-light: #f8fafc;
+    }
+
+    body {
+      font-family: 'Source Sans 3', 'Inter', sans-serif;
+      color: var(--text-dark);
+      background-color: #f1f5f9;
+      transition: background-color 0.3s ease;
+    }
+
+    /* Simulation of exact A4 Paper dimensions for realistic PDF planning */
+    .cv-page {
+      background: white;
+      width: 210mm;
+      min-height: 297mm;
+      margin: 2rem auto;
+      padding: 18mm 16mm;
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 8px 16px -6px rgba(0, 0, 0, 0.05);
+      position: relative;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Flat responsive viewing for natural screen browsing */
+    .cv-fluid-view {
+      width: 100% !important;
+      max-width: 1000px !important;
+      min-height: auto !important;
+      margin: 1.5rem auto !important;
+      padding: 2rem !important;
+      border-radius: 1rem;
+    }
+
+    /* 2-column layout mapping with right-aligned titles matching ModernCV */
+    .cv-grid {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      column-gap: 28px;
+    }
+
+    .cv-section-title {
+      font-weight: 700;
+      color: var(--primary-color);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 0.95rem;
+      border-right: 4px solid var(--primary-color);
+      padding-right: 14px;
+      text-align: right;
+      height: fit-content;
+      transition: border-color 0.3s ease, color 0.3s ease;
+    }
+
+    .cv-divider {
+      grid-column: span 2;
+      height: 1px;
+      background-color: var(--accent-line);
+      margin: 1rem 0;
+    }
+
+    /* Custom scrollbar aesthetics */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    /* Print Stylesheets - Overwriting screen constraints */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 12mm 14mm 12mm 14mm;
+      }
+      body {
+        background-color: #fff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .cv-page {
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        min-height: auto !important;
+        background: transparent !important;
+      }
+      .cv-grid {
+        grid-template-columns: 130px 1fr !important;
+        column-gap: 20px !important;
+      }
+      .cv-section-title {
+        font-size: 0.9rem !important;
+      }
+      .page-break-avoid {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+    }
+
+    .btn-active {
+      background-color: var(--primary-color) !important;
+      color: white !important;
+      border-color: var(--primary-color) !important;
+      box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.15);
+    }
+  </style>
+</head>
+<body class="theme-blue">
+
+  <!-- Navigation Header (Excluded from Print exports) -->
+  <header class="no-print bg-slate-900 text-white shadow-lg sticky top-0 z-50 px-4 py-3 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto flex flex-col xl:flex-row items-center justify-between gap-4">
+      
+      <!-- Identity and Context -->
+      <div class="flex items-center gap-3">
+        <div class="bg-gradient-to-tr from-sky-500 to-indigo-600 font-extrabold p-2.5 rounded-xl text-md flex items-center justify-center h-11 w-11 shadow-inner text-white">
+          CV
+        </div>
+        <div>
+          <h1 class="text-base font-bold tracking-tight">Vltimate CV Scraper</h1>
+          <p class="text-xs text-slate-400">Interactive Resume Engine & Customization Toolbar</p>
+        </div>
+      </div>
+
+      <!-- Actionable Toolbar controls -->
+      <div class="flex flex-wrap items-center justify-center gap-2.5">
+        
+        <!-- Language Selector Tabs -->
+        <div class="flex bg-slate-800 p-1 rounded-xl border border-slate-700">
+          <button onclick="toggleLang('en')" id="lang-en-btn" class="px-3 py-1.5 text-xs rounded-lg font-bold transition duration-200 btn-active">
+            🇬🇧 English
+          </button>
+          <button onclick="toggleLang('pl')" id="lang-pl-btn" class="px-3 py-1.5 text-xs rounded-lg font-bold transition duration-200 text-slate-400 hover:text-white">
+            🇵🇱 Polski
+          </button>
+          <button onclick="toggleLang('both')" id="lang-both-btn" class="px-3 py-1.5 text-xs rounded-lg font-bold transition duration-200 text-slate-400 hover:text-white" title="Show both languages">
+            🌐 Both (EN & PL)
+          </button>
+        </div>
+
+        <!-- Custom Target Language Selection / Write-in -->
+        <div class="flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
+          <label for="custom-lang-select" class="text-xs text-slate-400">Auto-Translate:</label>
+          <select id="custom-lang-select" onchange="handleCustomLangChange()" class="bg-slate-900 text-xs text-white border-none rounded focus:ring-1 focus:ring-sky-400 py-0.5 px-1.5 cursor-pointer">
+            <option value="none">None (Standard)</option>
+            <option value="es">Spanish (Español)</option>
+            <option value="de">German (Deutsch)</option>
+            <option value="fr">French (Français)</option>
+            <option value="it">Italian (Italiano)</option>
+            <option value="custom_writein">Write-in Custom...</option>
+          </select>
+        </div>
+
+        <!-- Palette Theme Configurator -->
+        <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
+          <span class="text-xs text-slate-400">Accent:</span>
+          <div class="flex gap-1.5">
+            <button onclick="applyTheme('theme-blue')" class="w-4 h-4 rounded-full bg-sky-500 border-2 border-white hover:scale-125 transition-transform" title="Modern Blue"></button>
+            <button onclick="applyTheme('theme-purple')" class="w-4 h-4 rounded-full bg-purple-600 border-2 border-white hover:scale-125 transition-transform" title="Purple Accent"></button>
+            <button onclick="applyTheme('theme-emerald')" class="w-4 h-4 rounded-full bg-emerald-600 border-2 border-white hover:scale-125 transition-transform" title="Emerald Green"></button>
+            <button onclick="applyTheme('theme-charcoal')" class="w-4 h-4 rounded-full bg-slate-600 border-2 border-white hover:scale-125 transition-transform" title="Slate Charcoal"></button>
+          </div>
+        </div>
+
+        <!-- View Mode -->
+        <div class="flex bg-slate-800 p-1 rounded-xl border border-slate-700">
+          <button onclick="toggleViewMode('a4')" id="view-a4-btn" class="px-2.5 py-1 text-xs rounded-lg font-medium transition duration-150 btn-active" title="Simulated A4 Paper Sheet">
+            <i class="fa-solid fa-file mr-1"></i> A4 Sheet
+          </button>
+          <button onclick="toggleViewMode('fluid')" id="view-fluid-btn" class="px-2.5 py-1 text-xs rounded-lg font-medium transition duration-150 text-slate-400 hover:text-white" title="Responsive web layout">
+            <i class="fa-solid fa-arrows-left-right mr-1"></i> Fluid View
+          </button>
+        </div>
+
+        <!-- RODO Consent dynamic injector -->
+        <div class="flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
+          <label for="rodo-config" class="text-xs text-slate-400">RODO/GDPR:</label>
+          <select id="rodo-config" onchange="refreshRodoClause()" class="bg-slate-900 text-xs text-white border-none rounded focus:ring-1 focus:ring-sky-400 py-0.5 px-1.5 cursor-pointer">
+            <option value="universal">Universal</option>
+            <option value="none">Omit</option>
+          </select>
+        </div>
+
+        <!-- Save Customization State -->
+        <button onclick="exportCustomizationConfig()" class="bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold px-3 py-1.5 rounded-xl text-xs border border-sky-500/40 flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-floppy-disk"></i> Save Config
+        </button>
+
+        <!-- Print/Save Action -->
+        <button id="pdf-export-btn" onclick="window.print()" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-4 py-1.5 rounded-xl text-xs shadow-md flex items-center gap-2 transition transform active:scale-95 duration-150">
+          <i class="fa-solid fa-print"></i> Print / Save PDF
+        </button>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Auto-Translation Warning Banner -->
+  <div id="translation-warning-banner" class="no-print max-w-5xl mx-auto mt-3 px-4 hidden">
+    <div class="bg-amber-50 border-l-4 border-amber-500 p-3 rounded-r-xl shadow-sm flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <i class="fa-solid fa-triangle-exclamation text-amber-600 text-base"></i>
+        <div>
+          <p class="text-xs font-bold text-amber-900">Custom Language Selected for Auto-Translation!</p>
+          <p class="text-[11.5px] text-amber-700">The requested target language will be automatically translated by <code class="font-bold">agy</code> on the next run. PDF generation is temporarily disabled until translation is complete.</p>
+        </div>
+      </div>
+      <button onclick="confirmTranslationRequest()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1 rounded-lg text-xs transition">
+        Confirm & Save Target
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= ENGLISH CV PAGE CONTAINER ================= -->
+  <main id="cv-english-page" class="cv-page">
+    
+    <!-- Top Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start border-b-2 pb-4 mb-4" style="border-color: var(--primary-color);">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900" style="color: var(--primary-color);">Viktoria Jędrzejczyk</h1>
+        <p class="text-md md:text-lg font-semibold mt-0.5 text-slate-700">Systems Engineer & Low-Level Hardware Specialist</p>
+      </div>
+      <!-- Right Column: Contact details -->
+      <div class="text-left md:text-right text-[11px] space-y-0.5 text-slate-600 mt-2 md:mt-0 font-medium md:min-w-[260px]">
+        <div>Warsaw, Poland <i class="fa-solid fa-location-dot w-4 text-center ml-1 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+        <div>+48 519 428 685 <i class="fa-solid fa-phone w-4 text-center ml-1 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+        <div><a href="mailto:vika.jedr@gmail.com" class="hover:underline">vika.jedr@gmail.com</a> <i class="fa-solid fa-envelope w-4 text-center ml-1 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+        <div><a href="https://github.com/Vikyek" target="_blank" class="hover:underline">github.com/Vikyek</a> <i class="fa-brands fa-github w-4 text-center ml-1 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+      </div>
+    </div>
+
+    <!-- Inner Grid Structure -->
+    <div class="space-y-3.5">
+
+      <!-- SECTION: SUMMARY -->
+      <div class="cv-grid">
+        <div class="cv-section-title">Summary</div>
+        <div class="text-[11.5px] text-slate-700 leading-relaxed text-justify">
+          Versatile <strong>Systems Engineer & Low-Level Hardware Specialist</strong> with deep expertise in custom Linux kernel tuning (<code class="text-sky-700 font-semibold">cachyos-bore</code>), next-generation filesystems (<code class="text-sky-700 font-semibold">bcachefs</code> live migration & BTRFS recovery), gaming console security exploitation (Switch RCM, 3DS ARM11/9, PS4 GoldHEN/PPPwn, PS3 bg-toolset, PSP Pandora), and MediaTek/Qualcomm hardware BROM recovery. Experienced in compiling AOSP ROMs (crDroid 16.0) from source, engineering autonomous AI agent workflows (Antigravity CLI, <code class="text-sky-700 font-semibold">toon-context-mcp</code>, <code class="text-sky-700 font-semibold">cockpit-tools-1</code>), and developing full-stack security/virtualization software in C, Rust, Go, Python, and C#/.NET. Certified IT Specialist & Game Programmer (EE.08 & EE.09 distinction) with Cambridge C1 Advanced certification.
+        </div>
+      </div>
+
+      <div class="cv-divider"></div>
+
+      <!-- SECTION: TECHNICAL SKILLS -->
+      <div class="cv-grid page-break-avoid">
+        <div class="cv-section-title">Skills</div>
+        <div class="text-[11px] space-y-1">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+            <div>
+              <span class="font-bold text-slate-800">Languages:</span> 
+              <span class="text-slate-600">C, C++, Rust, Go, Python, C# (.NET Core), TypeScript, JS, PHP, Bash, Fish, SQL</span>
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">Linux & Kernel:</span> 
+              <span class="text-slate-600">Arch Linux, Kernel Patching (<code class="text-sky-700">cachyos-bore</code>), <code class="text-sky-700">bcachefs</code>, BTRFS, i3 WM, Nouveau/NVIDIA tuning</span>
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">Security & Low-Level:</span> 
+              <span class="text-slate-600">Console CFW (Switch/3DS/PS4/PS3/PSP), MTK BROM (<code class="text-sky-700">mtkclient</code>), Testpoint Shorting, Flash Dumping</span>
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">AI & Cloud:</span> 
+              <span class="text-slate-600">Antigravity CLI (<code class="text-sky-700">agy</code>), TOON MCP Server, Claude 3.7, GPT-4, GCP Cloud APIs & IAM</span>
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">Android Systems:</span> 
+              <span class="text-slate-600">AOSP Source Building (crDroid 16.0 / LineageOS), Xiaomi HyperOS Bootloader Bypass, EDL</span>
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">Full-Stack & DBs:</span> 
+              <span class="text-slate-600">ASP.NET Core, EF Core, Node.js, Express, Angular, MySQL, MS SQL Server, REST Web APIs</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cv-divider"></div>
+
+      <!-- SECTION: HARDWARE & SYSTEM EXPLOITATION -->
+      <div class="cv-grid page-break-avoid">
+        <div class="cv-section-title">Hardware & Exploitation</div>
+        <div class="text-[11px] text-slate-600 space-y-1 text-justify">
+          <div>
+            <strong class="text-slate-800">Gaming Console Security & Custom Firmware (CFW):</strong>
+            Engineered hardware RCM payload injection (Fusee-Gelee/Atmosphere) & eMMC isolation on Nintendo Switch; ARM11/ARM9 boot9strap (b9s) and Luma3DS on 3DS; WebKit/Kernel exploit chains (PPPwn, GoldHEN, FPKG backports) on PS4; bg-toolset flash patching and Evilnat CFW on PS3; Pandora IPL recovery on PSP.
+          </div>
+          <div>
+            <strong class="text-slate-800">Android & MediaTek BROM Recovery:</strong>
+            Bypassed Xiaomi HyperOS/MIUI bootloader restriction wait timers & quota limits; executed PCB hardware testpoint (TP to GND) shorting to force MediaTek BROM mode; performed raw memory chip flash dumping & parsing; conducted deep MTK chipset unbricking (<code class="text-sky-700 font-semibold">mtkclient</code>, MT6833 Dimensity 700 5G) with <code class="text-sky-700">preloader_to_dram</code> and <code class="text-sky-700">vbmeta</code> verification bypasses.
+          </div>
+        </div>
+      </div>
+
+      <div class="cv-divider"></div>
+
+      <!-- SECTION: OPEN SOURCE & GITHUB PROJECTS -->
+      <div class="cv-grid">
+        <div class="cv-section-title">Open Source</div>
+        <div class="space-y-2 text-[11px]">
+          <div>
+            <div class="flex justify-between items-baseline">
+              <span class="font-bold text-slate-800">vltimate-cv-scraper</span>
+              <span class="text-[10.5px] text-slate-500 font-mono">Shell | GitHub: Vikyek/vltimate-cv-scraper</span>
+            </div>
+            <p class="text-slate-600 text-justify mt-0.5">Autonomous AI technical harvester & resume architect engine scanning system hardware, shell history, git repos, and GitHub API to build structured master knowledge bases and render bilingual interactive resumes.</p>
+          </div>
+          <div>
+            <div class="flex justify-between items-baseline">
+              <span class="font-bold text-slate-800">cockpit-tools-1</span>
+              <span class="text-[10.5px] text-slate-500 font-mono">Python / Shell | GitHub: Vikyek/cockpit-tools-1</span>
+            </div>
+            <p class="text-slate-600 text-justify mt-0.5">Universal AI IDE account manager supporting Antigravity, OpenAI Codex, Copilot, Cursor, Windsurf, Kiro, and Gemini-cli with multi-account switching, quota monitoring, and session wake-up automation.</p>
+          </div>
+          <div>
+            <div class="flex justify-between items-baseline">
+              <span class="font-bold text-slate-800">gemini-config-vault</span>
+              <span class="text-[10.5px] text-slate-500 font-mono">Shell / Git | GitHub: Vikyek/gemini-config-vault</span>
+            </div>
+            <p class="text-slate-600 text-justify mt-0.5">Private configuration vault tracking all learned preferences, rules, custom agent skills, and environment options across devices with automated git sync and interactive conflict detection.</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 pt-0.5">
+            <div>
+              <span class="font-bold text-slate-800">pkgscan:</span> Security vulnerability auditor for package dependencies (C/Python).
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">btrfs-recovery-tool:</span> Storage scanner & file recovery engine for broken BTRFS filesystems (Python).
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">winboat & disk-resizer:</span> Containerized Windows app virtualization runner for Linux (TypeScript/Python).
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">kernel-patches:</span> Linux kernel patches for <code class="text-sky-700">cachyos-bore</code> CPU scheduler & GPU power tuning (C/Patch).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cv-divider"></div>
+
+      <!-- SECTION: PROFESSIONAL EXPERIENCE -->
+      <div class="cv-grid">
+        <div class="cv-section-title">Experience</div>
+        <div class="space-y-3">
+          <div class="page-break-avoid">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-bold text-xs text-slate-800">Video Game Localization QA Tester</span>
+                <span class="text-slate-500 font-medium text-[11px] ml-1">| Lionbridge Poland Sp. z o.o.</span>
+              </div>
+              <div class="text-right text-[11px]">
+                <span class="font-semibold text-slate-700">Sept 2024 – Oct 2024</span> <span class="text-slate-400 italic">| Warsaw</span>
+              </div>
+            </div>
+            <ul class="list-disc pl-4 mt-1 text-[11px] text-slate-600 space-y-0.5 text-justify">
+              <li>Executed comprehensive linguistic QA testing across major video game releases, validating UI text alignment, terminology accuracy, and context integrity.</li>
+              <li>Logged and managed technical defects in Jira issue tracking pipelines, collaborating directly with localization leads.</li>
+            </ul>
+          </div>
+
+          <div class="page-break-avoid">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-bold text-xs text-slate-800">Office Administrator & Systems Support</span>
+                <span class="text-slate-500 font-medium text-[11px] ml-1">| T&T Studio Urody</span>
+              </div>
+              <div class="text-right text-[11px]">
+                <span class="font-semibold text-slate-700">July 2022 – Oct 2023</span> <span class="text-slate-400 italic">| Warsaw</span>
+              </div>
+            </div>
+            <ul class="list-disc pl-4 mt-1 text-[11px] text-slate-600 space-y-0.5 text-justify">
+              <li>Managed office operations, client relations, local IT infrastructure maintenance, network connectivity, and digital record administration.</li>
+            </ul>
+          </div>
+
+          <div class="page-break-avoid">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-bold text-xs text-slate-800">Video Game QA Tester (Internship)</span>
+                <span class="text-slate-500 font-medium text-[11px] ml-1">| PlayWay S.A.</span>
+              </div>
+              <div class="text-right text-[11px]">
+                <span class="font-semibold text-slate-700">April 2021 – May 2021</span> <span class="text-slate-400 italic">| Warsaw</span>
+              </div>
+            </div>
+            <ul class="list-disc pl-4 mt-1 text-[11px] text-slate-600 space-y-0.5 text-justify">
+              <li>Authored structured test suites, performed UX usability testing, and reported hundreds of software defects across pre-release game titles.</li>
+              <li class="italic text-[10.5px] text-slate-500">Ref: Michał Rogowski (michal@playway.com) — candidate recognized by surname Jędrzejczyk due to legal ID name change (documentation available upon request).</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="cv-divider"></div>
+
+      <!-- SECTION: EDUCATION & CERTIFICATIONS -->
+      <div class="cv-grid page-break-avoid">
+        <div class="cv-section-title">Education</div>
+        <div class="space-y-2 text-[11px]">
+          <div>
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-bold text-xs text-slate-800">IT Specialist & Game Programmer (Technik Informatyk - Programista Gier)</span>
+                <span class="text-slate-500 font-medium ml-1">| Technikum Mechatroniczne Nr 1 w Warszawie</span>
+              </div>
+              <div class="text-right text-xs">
+                <span class="font-semibold text-slate-700">2018 – 2023</span>
+              </div>
+            </div>
+            <p class="text-slate-600 mt-0.5">
+              • <strong>State Qualification EE.08:</strong> Assembly, configuration, and operation of computer systems & networks (Passed with distinction).<br>
+              • <strong>State Qualification EE.09:</strong> Software execution, web development, scripting & database administration (Passed with distinction).
+            </p>
+          </div>
+
+          <div class="pt-1 grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div>
+              <span class="font-bold text-slate-800">Cambridge English C1 Advanced:</span> Grade B (Score: 194)
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">Microsoft 365 Fundamentals</span> Certificate
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">CISCO CCNA:</span> Routing & Switching Essentials
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">CISCO IT Essentials:</span> Hardware & Operating Systems
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Dynamic RODO block wrapper -->
+    <div class="rodo-outer-box mt-5 pt-3 border-t border-slate-200 text-[10px] text-slate-400 text-justify leading-tight font-sans">
+      <span class="rodo-content-node"></span>
+    </div>
+
+  </main>
+
+
+  <!-- ================= POLISH CV PAGE CONTAINER ================= -->
+  <main id="cv-polish-page" class="cv-page hidden">
+    
+    <!-- Top Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start border-b-2 pb-4 mb-4" style="border-color: var(--primary-color);">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900" style="color: var(--primary-color);">Viktoria Jędrzejczyk</h1>
+        <p class="text-md md:text-lg font-semibold mt-0.5 text-slate-700">Inżynier Systemowy & Specjalista Low-Level / Hardware</p>
+      </div>
+      <!-- Right Column: Contact details -->
+      <div class="text-left md:text-right text-[11px] space-y-0.5 text-slate-600 mt-2 md:mt-0 font-medium md:min-w-[260px]">
+        <div>Warszawa, Polska <i class="fa-solid fa-location-dot w-4 text-center ml-1 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+        <div>+48 519 428 685 <i class="fa-solid fa-phone w-4 text-center ml-1 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+        <div><a href="mailto:vika.jedr@gmail.com" class="hover:underline">vika.jedr@gmail.com</a> <i class="fa-solid fa-envelope w-4 text-center ml-1 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+        <div><a href="https://github.com/Vikyek" target="_blank" class="hover:underline">github.com/Vikyek</a> <i class="fa-brands fa-github w-4 text-center ml-1 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+      </div>
+    </div>
+
+    <!-- Inner Grid Structure -->
+    <div class="space-y-3.5">
+
+      <!-- SECTION: SUMMARY -->
+      <div class="cv-grid">
+        <div class="cv-section-title">O mnie</div>
+        <div class="text-[11.5px] text-slate-700 leading-relaxed text-justify">
+          Wszechstronna <strong>Inżynier Systemowa & Specjalistka Low-Level / Hardware</strong> z zaawansowaną wiedzą w zakresie tuningu jądra Linux (<code class="text-sky-700 font-semibold">cachyos-bore</code>), nowoczesnych systemów plików (migracja <code class="text-sky-700 font-semibold">bcachefs</code> na żywo, odzyskiwanie BTRFS), eksploatacji konsol do gier (Switch RCM, 3DS ARM11/9, PS4 GoldHEN/PPPwn, PS3 bg-toolset, PSP Pandora) oraz ratowania urządzeń MediaTek/Qualcomm w trybie BROM/EDL. Doświadczona w kompilacji AOSP ROM (crDroid 16.0) ze źródeł, projektowaniu autonomicznych workflow AI (Antigravity CLI, <code class="text-sky-700 font-semibold">toon-context-mcp</code>, <code class="text-sky-700 font-semibold">cockpit-tools-1</code>) oraz tworzeniu oprogramowania full-stack i wirtualizacji w C, Rust, Go, Python i C#/.NET. Dyplomowana Technik Informatyk - Programista Gier (wyróżnienie z egzaminów EE.08 i EE.09) z certyfikatem Cambridge C1 Advanced.
+        </div>
+      </div>
+
+      <div class="cv-divider"></div>
+
+      <!-- SECTION: TECHNICAL SKILLS -->
+      <div class="cv-grid page-break-avoid">
+        <div class="cv-section-title">Umiejętności</div>
+        <div class="text-[11px] space-y-1">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+            <div>
+              <span class="font-bold text-slate-800">Języki Programowania:</span> 
+              <span class="text-slate-600">C, C++, Rust, Go, Python, C# (.NET Core), TypeScript, JS, PHP, Bash, Fish, SQL</span>
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">Linux & Jądro Systemu:</span> 
+              <span class="text-slate-600">Arch Linux, Łatki Jądra (<code class="text-sky-700">cachyos-bore</code>), <code class="text-sky-700">bcachefs</code>, BTRFS, i3 WM, Optymalizacja Nouveau/NVIDIA</span>
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">Security & Low-Level:</span> 
+              <span class="text-slate-600">CFW Konsol (Switch/3DS/PS4/PS3/PSP), MTK BROM (<code class="text-sky-700">mtkclient</code>), Zwieranie Testpointów, Zrzuty Pamięci Flash</span>
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">AI & Chmura:</span> 
+              <span class="text-slate-600">Antigravity CLI (<code class="text-sky-700">agy</code>), TOON MCP Server, Claude 3.7, GPT-4, GCP Cloud API & IAM</span>
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">Systemy Android:</span> 
+              <span class="text-slate-600">Kompilacja AOSP ze Źródeł (crDroid 16.0 / LineageOS), Obejście HyperOS Bootloadera, EDL</span>
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">Full-Stack & Bazy Danych:</span> 
+              <span class="text-slate-600">ASP.NET Core, EF Core, Node.js, Express, Angular, MySQL, MS SQL Server, REST Web API</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cv-divider"></div>
+
+      <!-- SECTION: HARDWARE & SYSTEM EXPLOITATION -->
+      <div class="cv-grid page-break-avoid">
+        <div class="cv-section-title">Hardware & Inżynieria</div>
+        <div class="text-[11px] text-slate-600 space-y-1 text-justify">
+          <div>
+            <strong class="text-slate-800">Security Konsol & Custom Firmware (CFW):</strong>
+            Wstrzykiwanie payloadów RCM (Fusee-Gelee/Atmosphere) i izolacja eMMC na Nintendo Switch; ARM11/ARM9 boot9strap (b9s) i Luma3DS na 3DS; WebKit/Kernel exploit (PPPwn, GoldHEN, FPKG) na PS4; patchowanie pamięci flash bg-toolset i Evilnat CFW na PS3; Pandora IPL na PSP.
+          </div>
+          <div>
+            <strong class="text-slate-800">Ratowanie Urządzeń Android & MediaTek BROM:</strong>
+            Ominięcie blokad czasowych i limitów konta przy odblokowywaniu bootloadera Xiaomi HyperOS/MIUI; zwieranie testpointów płyty głównej (TP do GND) do wymuszenia trybu MediaTek BROM; zrzuty pamięci flash i ich analiza; zaawansowane unbricking procesorów MediaTek (<code class="text-sky-700 font-semibold">mtkclient</code>, MT6833 Dimensity 700 5G) z nadpisywaniem <code class="text-sky-700">preloader_to_dram</code> i weryfikacji <code class="text-sky-700">vbmeta</code>.
+          </div>
+        </div>
+      </div>
+
+      <div class="cv-divider"></div>
+
+      <!-- SECTION: OPEN SOURCE & GITHUB PROJECTS -->
+      <div class="cv-grid">
+        <div class="cv-section-title">Open Source</div>
+        <div class="space-y-2 text-[11px]">
+          <div>
+            <div class="flex justify-between items-baseline">
+              <span class="font-bold text-slate-800">vltimate-cv-scraper</span>
+              <span class="text-[10.5px] text-slate-500 font-mono">Shell | GitHub: Vikyek/vltimate-cv-scraper</span>
+            </div>
+            <p class="text-slate-600 text-justify mt-0.5">Autonomiczny harvester inteligencji technicznej AI oraz silnik architektury CV skanujący sprzęt, historię powłoki, repozytoria git i API GitHub w celu generowania interaktywnych życiorysów.</p>
+          </div>
+          <div>
+            <div class="flex justify-between items-baseline">
+              <span class="font-bold text-slate-800">cockpit-tools-1</span>
+              <span class="text-[10.5px] text-slate-500 font-mono">Python / Shell | GitHub: Vikyek/cockpit-tools-1</span>
+            </div>
+            <p class="text-slate-600 text-justify mt-0.5">Uniwersalny menedżer kont AI IDE wspierający Antigravity, OpenAI Codex, Copilot, Cursor, Windsurf, Kiro i Gemini-cli z przełączaniem kont i monitorowaniem limitów.</p>
+          </div>
+          <div>
+            <div class="flex justify-between items-baseline">
+              <span class="font-bold text-slate-800">gemini-config-vault</span>
+              <span class="text-[10.5px] text-slate-500 font-mono">Shell / Git | GitHub: Vikyek/gemini-config-vault</span>
+            </div>
+            <p class="text-slate-600 text-justify mt-0.5">Prywatne repozytorium vault śledzące wyuczone reguły, umiejętności i konfiguracje z automatyczną synchronizacją git i rozstrzyganiem konfliktów.</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 pt-0.5">
+            <div>
+              <span class="font-bold text-slate-800">pkgscan:</span> Skaner podatności bezpieczeństwa w zależnościach pakietów (C/Python).
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">btrfs-recovery-tool:</span> Skaner i silnik odzyskiwania danych z uszkodzonych partycji BTRFS (Python).
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">winboat & disk-resizer:</span> Kontenerowy runner aplikacji Windows dla systemu Linux (TypeScript/Python).
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">kernel-patches:</span> Łatki jądra Linux dla planisty CPU <code class="text-sky-700">cachyos-bore</code> i zasilania GPU (C/Patch).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cv-divider"></div>
+
+      <!-- SECTION: PROFESSIONAL EXPERIENCE -->
+      <div class="cv-grid">
+        <div class="cv-section-title">Doświadczenie</div>
+        <div class="space-y-3">
+          <div class="page-break-avoid">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-bold text-xs text-slate-800">Tester QA Lokalizacji Gier Wideo</span>
+                <span class="text-slate-500 font-medium text-[11px] ml-1">| Lionbridge Poland Sp. z o.o.</span>
+              </div>
+              <div class="text-right text-[11px]">
+                <span class="font-semibold text-slate-700">Wrzesień 2024 – Październik 2024</span> <span class="text-slate-400 italic">| Warszawa</span>
+              </div>
+            </div>
+            <ul class="list-disc pl-4 mt-1 text-[11px] text-slate-600 space-y-0.5 text-justify">
+              <li>Przeprowadzanie testów QA lokalizacji językowej w grach wideo, weryfikacja kontekstu, poprawności terminologicznej i układu interfejsu.</li>
+              <li>Raportowanie błędów w systemie Jira i współpraca z zespołami deweloperskimi.</li>
+            </ul>
+          </div>
+
+          <div class="page-break-avoid">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-bold text-xs text-slate-800">Administrator Biura & Wsparcie IT</span>
+                <span class="text-slate-500 font-medium text-[11px] ml-1">| T&T Studio Urody</span>
+              </div>
+              <div class="text-right text-[11px]">
+                <span class="font-semibold text-slate-700">Lipiec 2022 – Październik 2023</span> <span class="text-slate-400 italic">| Warszawa</span>
+              </div>
+            </div>
+            <ul class="list-disc pl-4 mt-1 text-[11px] text-slate-600 space-y-0.5 text-justify">
+              <li>Zarządzanie operacyjne biurem, obsługa klienta, utrzymanie lokalnej infrastruktury IT i sieci oraz administracja dokumentacją cyfrową.</li>
+            </ul>
+          </div>
+
+          <div class="page-break-avoid">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-bold text-xs text-slate-800">Tester QA Gier Wideo (Praktyki)</span>
+                <span class="text-slate-500 font-medium text-[11px] ml-1">| PlayWay S.A.</span>
+              </div>
+              <div class="text-right text-[11px]">
+                <span class="font-semibold text-slate-700">Kwiecień 2021 – Maj 2021</span> <span class="text-slate-400 italic">| Warszawa</span>
+              </div>
+            </div>
+            <ul class="list-disc pl-4 mt-1 text-[11px] text-slate-600 space-y-0.5 text-justify">
+              <li>Tworzenie scenariuszy testowych, testy użyteczności UX oraz zgłaszanie setek usterek w przedpremierowych wersjach gier.</li>
+              <li class="italic text-[10.5px] text-slate-500">Ref: Michał Rogowski (michal@playway.com) — osoba referencyjna zna kandydatkę pod nazwiskiem Jędrzejczyk ze względu na urzędową zmianę nazwiska (dokumentacja do wglądu).</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="cv-divider"></div>
+
+      <!-- SECTION: EDUCATION & CERTIFICATIONS -->
+      <div class="cv-grid page-break-avoid">
+        <div class="cv-section-title">Edukacja</div>
+        <div class="space-y-2 text-[11px]">
+          <div>
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-bold text-xs text-slate-800">Technik Informatyk - Programista Gier</span>
+                <span class="text-slate-500 font-medium ml-1">| Technikum Mechatroniczne Nr 1 w Warszawie</span>
+              </div>
+              <div class="text-right text-xs">
+                <span class="font-semibold text-slate-700">2018 – 2023</span>
+              </div>
+            </div>
+            <p class="text-slate-600 mt-0.5">
+              • <strong>Kwalifikacja EE.08:</strong> Montaż i eksploatacja systemów komputerowych, urządzeń peryferyjnych i sieci (Zdane z wyróżnieniem).<br>
+              • <strong>Kwalifikacja EE.09:</strong> Programowanie, tworzenie aplikacji internetowych i baz danych (Zdane z wyróżnieniem).
+            </p>
+          </div>
+
+          <div class="pt-1 grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div>
+              <span class="font-bold text-slate-800">Cambridge English C1 Advanced:</span> Ocena B (Wynik: 194)
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">Microsoft 365 Fundamentals</span> Cert
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">CISCO CCNA:</span> Podstawy Trasowania i Przełączania
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">CISCO IT Essentials:</span> Sprzęt i Systemy Operacyjne
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Dynamic RODO block wrapper (Polish View) -->
+    <div class="rodo-outer-box mt-5 pt-3 border-t border-slate-200 text-[10px] text-slate-400 text-justify leading-tight font-sans">
+      <span class="rodo-content-node"></span>
+    </div>
+
+  </main>
+
+  <script>
+    const RODO_DATABASE = {
+      en: {
+        universal: `I hereby give consent for my personal data to be processed for the purpose of conducting recruitment procedures (in accordance with Regulation (EU) 2016/679 of the European Parliament and of the Council of 27 April 2016 on the protection of natural persons with regard to the processing of personal data - GDPR).`,
+        none: ``
+      },
+      pl: {
+        universal: `Wyrażam zgodę na przetwarzanie moich danych osobowych dla potrzeb niezbędnych do realizacji procesu rekrutacji (zgodnie z ustawą z dnia 10 maja 2018 roku o ochronie danych osobowych (Dz. Ustaw z 2018, poz. 1000) oraz zgodnie z Rozporządzeniem Parlamentu Europejskiego i Rady (UE) 2016/679 z dnia 27 kwietnia 2016 r. w sprawie ochrony osób fizycznych w związku z przetwarzaniem danych osobowych i w sprawie swobodnego przepływu takich danych oraz uchylenia dyrektywy 95/46/WE (RODO)).`,
+        none: ``
+      }
+    };
+
+    let currentLanguage = 'en';
+    let currentTheme = 'theme-blue';
+    let targetTranslationLang = 'none';
+
+    function toggleLang(lang) {
+      currentLanguage = lang;
+      const enPage = document.getElementById('cv-english-page');
+      const plPage = document.getElementById('cv-polish-page');
+      const enBtn = document.getElementById('lang-en-btn');
+      const plBtn = document.getElementById('lang-pl-btn');
+      const bothBtn = document.getElementById('lang-both-btn');
+
+      if (lang === 'en') {
+        enPage.classList.remove('hidden');
+        plPage.classList.add('hidden');
+        enBtn.classList.add('btn-active');
+        plBtn.classList.remove('btn-active');
+        bothBtn.classList.remove('btn-active');
+      } else if (lang === 'pl') {
+        enPage.classList.add('hidden');
+        plPage.classList.remove('hidden');
+        plBtn.classList.add('btn-active');
+        enBtn.classList.remove('btn-active');
+        bothBtn.classList.remove('btn-active');
+      } else if (lang === 'both') {
+        enPage.classList.remove('hidden');
+        plPage.classList.remove('hidden');
+        bothBtn.classList.add('btn-active');
+        enBtn.classList.remove('btn-active');
+        plBtn.classList.remove('btn-active');
+      }
+    }
+
+    function handleCustomLangChange() {
+      const select = document.getElementById('custom-lang-select');
+      const pdfBtn = document.getElementById('pdf-export-btn');
+      const warningBanner = document.getElementById('translation-warning-banner');
+
+      let val = select.value;
+      if (val === 'custom_writein') {
+        val = prompt("Enter target language code or name for AI auto-translation (e.g. es, de, fr, ja):");
+        if (!val) { select.value = 'none'; val = 'none'; }
+      }
+
+      targetTranslationLang = val;
+
+      if (val !== 'none') {
+        warningBanner.classList.remove('hidden');
+        pdfBtn.disabled = true;
+        pdfBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      } else {
+        warningBanner.classList.add('hidden');
+        pdfBtn.disabled = false;
+        pdfBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    function applyTheme(className) {
+      currentTheme = className;
+      document.body.className = className;
+    }
+
+    function toggleViewMode(mode) {
+      const pages = document.querySelectorAll('.cv-page');
+      const a4Btn = document.getElementById('view-a4-btn');
+      const fluidBtn = document.getElementById('view-fluid-btn');
+
+      if (mode === 'fluid') {
+        pages.forEach(page => page.classList.add('cv-fluid-view'));
+        fluidBtn.classList.add('btn-active');
+        a4Btn.classList.remove('btn-active');
+      } else {
+        pages.forEach(page => page.classList.remove('cv-fluid-view'));
+        a4Btn.classList.add('btn-active');
+        fluidBtn.classList.remove('btn-active');
+      }
+    }
+
+    function refreshRodoClause() {
+      const activeSelection = document.getElementById('rodo-config') ? document.getElementById('rodo-config').value : 'universal';
+      const enNode = document.querySelector('#cv-english-page .rodo-content-node');
+      const plNode = document.querySelector('#cv-polish-page .rodo-content-node');
+      const outerBoxes = document.querySelectorAll('.rodo-outer-box');
+
+      if (enNode) {
+        enNode.textContent = (RODO_DATABASE.en && RDO_DATABASE_SEL(RODO_DATABASE.en, activeSelection)) || RODO_DATABASE.en.universal;
+      }
+      if (plNode) {
+        plNode.textContent = (RODO_DATABASE.pl && RDO_DATABASE_SEL(RODO_DATABASE.pl, activeSelection)) || RODO_DATABASE.pl.universal;
+      }
+
+      outerBoxes.forEach(box => {
+        if (activeSelection === 'none') { box.classList.add('hidden'); }
+        else { box.classList.remove('hidden'); }
+      });
+    }
+
+    function RDO_DATABASE_SEL(obj, key) {
+      return (obj[key] !== undefined) ? obj[key] : obj['universal'];
+    }
+
+    function exportCustomizationConfig() {
+      const config = {
+        theme: currentTheme,
+        language: currentLanguage,
+        targetTranslationLang: targetTranslationLang,
+        rodo: document.getElementById('rodo-config') ? document.getElementById('rodo-config').value : 'universal',
+        timestamp: new Date().toISOString()
+      };
+      
+      const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'pdf_customization.json';
+      a.click();
+      alert("✨ Customization saved! Resume in your terminal to apply choices.");
+    }
+
+    window.onload = function() {
+      refreshRodoClause();
+    };
+  </script>
+</body>
+</html>
