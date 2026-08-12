@@ -395,18 +395,46 @@ show_spinner() {
 run_with_spinner() {
     local msg="$1"
     shift
-    "$@" >> "${LOG_FILE}" 2>&1 &
-    local pid=$!
-    show_spinner "$pid" "$msg"
-    local exit_code=0
-    wait "$pid" || exit_code=$?
-    if [[ $exit_code -ne 0 ]]; then
-        printf "\r\e[K ${C_RED}${G_CROSS}${C_RESET} \e[1m%s\e[0m ${C_PINK}(Failed — see log)${C_RESET}\n" "${msg}" >&2
-        log_err "${msg} failed with exit code ${exit_code}. Check '${LOG_FILE}' for details."
-        return $exit_code
-    else
-        printf "\r\e[K ${C_GREEN}${G_CHECK}${C_RESET} \e[1m%s\e[0m ${C_CYAN}(Completed)${C_RESET}\n" "${msg}" >&2
+    local max_attempts=1
+    local attempt=1
+    local delay=2
+
+    if [[ "$1" == "agy" ]]; then
+        max_attempts=4
     fi
+
+    local exit_code=0
+    while [[ $attempt -le $max_attempts ]]; do
+        local msg_prefix=""
+        if [[ $attempt -gt 1 ]]; then
+            msg_prefix="[Retry $((attempt-1))] "
+            echo -e " ${C_GOLD}${G_WARN}${C_RESET} ${C_CYAN}API or agent error. Retrying in ${delay}s...${C_RESET}" >&2
+            sleep $delay
+            delay=$((delay * 2))
+        fi
+
+        "$@" >> "${LOG_FILE}" 2>&1 &
+        local pid=$!
+        show_spinner "$pid" "${msg_prefix}${msg}"
+        exit_code=0
+        wait "$pid" || exit_code=$?
+        
+        if [[ $exit_code -eq 0 ]]; then
+            printf "\r\e[K ${C_GREEN}${G_CHECK}${C_RESET} \e[1m%s\e[0m ${C_CYAN}(Completed)${C_RESET}\n" "${msg_prefix}${msg}" >&2
+            return 0
+        fi
+        
+        # Do not retry if user hit Ctrl+C (exit code 130)
+        if [[ $exit_code -eq 130 ]]; then
+            break
+        fi
+        
+        attempt=$((attempt + 1))
+    done
+
+    printf "\r\e[K ${C_RED}${G_CROSS}${C_RESET} \e[1m%s\e[0m ${C_PINK}(Failed — see log)${C_RESET}\n" "${msg}" >&2
+    log_err "${msg} failed with exit code ${exit_code}. Check '${LOG_FILE}' for details."
+    return $exit_code
 }
 
 # ------------------------------------------------------------------------------
