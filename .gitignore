@@ -1,0 +1,17 @@
+# Personal Data Encrypted & Packed Archives
+*.enc
+*.gpg
+*.tar.gz.enc
+*.zip.enc
+personal_data*.tar.gz*
+output/personal_data*
+
+# Temporary Files & Logs
+*.log
+*.tmp
+.DS_Store
+*.swp
+
+# Local Environment Overrides
+.env
+.env.local

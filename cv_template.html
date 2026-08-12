@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume / CV Template</title>
+  
+  <!-- Tailwind CSS for high fidelity responsive layout -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Polished typography fonts matching professional resumes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Source+Sans+3:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons for modern, sharp contact details -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+      --primary-color: #0284c7; /* Modern CV Blue */
+      --primary-light: #f0f9ff;
+      --text-dark: #1e293b;
+      --text-muted: #475569;
+      --border-light: #e2e8f0;
+      --accent-line: #cbd5e1;
+    }
+
+    /* Interactive Color Themes */
+    .theme-blue {
+      --primary-color: #0284c7;
+      --primary-light: #f0f9ff;
+    }
+    .theme-purple {
+      --primary-color: #a100ff;
+      --primary-light: #faf5ff;
+    }
+    .theme-emerald {
+      --primary-color: #059669;
+      --primary-light: #ecfdf5;
+    }
+    .theme-charcoal {
+      --primary-color: #334155;
+      --primary-light: #f8fafc;
+    }
+
+    body {
+      font-family: 'Source Sans 3', 'Inter', sans-serif;
+      color: var(--text-dark);
+      background-color: #f1f5f9;
+      transition: background-color 0.3s ease;
+    }
+
+    /* Simulation of exact A4 Paper dimensions for realistic PDF planning */
+    .cv-page {
+      background: white;
+      width: 210mm;
+      min-height: 297mm;
+      margin: 2rem auto;
+      padding: 18mm 16mm;
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 8px 16px -6px rgba(0, 0, 0, 0.05);
+      position: relative;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Flat responsive viewing for natural screen browsing */
+    .cv-fluid-view {
+      width: 100% !important;
+      max-width: 1000px !important;
+      min-height: auto !important;
+      margin: 1.5rem auto !important;
+      padding: 2rem !important;
+      border-radius: 1rem;
+    }
+
+    /* 2-column layout mapping with right-aligned titles matching ModernCV */
+    .cv-grid {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      column-gap: 28px;
+    }
+
+    .cv-section-title {
+      font-weight: 700;
+      color: var(--primary-color);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 1rem;
+      border-right: 4px solid var(--primary-color);
+      padding-right: 14px;
+      text-align: right;
+      height: fit-content;
+      transition: border-color 0.3s ease, color 0.3s ease;
+    }
+
+    .cv-divider {
+      grid-column: span 2;
+      height: 1px;
+      background-color: var(--accent-line);
+      margin: 1.15rem 0;
+    }
+
+    /* Custom scrollbar aesthetics */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Print Stylesheets - Overwriting screens constraints */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 12mm 14mm 12mm 14mm;
+      }
+      body {
+        background-color: #fff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .cv-page {
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        min-height: auto !important;
+        background: transparent !important;
+      }
+      .cv-grid {
+        grid-template-columns: 130px 1fr !important;
+        column-gap: 20px !important;
+      }
+      .cv-section-title {
+        font-size: 0.95rem !important;
+      }
+      .page-break-avoid {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+    }
+
+    /* Responsive fallbacks for smaller viewports */
+    @media (max-width: 840px) {
+      .cv-page {
+        width: 95% !important;
+        min-height: auto !important;
+        padding: 1.5rem !important;
+        margin: 1rem auto !important;
+      }
+      .cv-grid {
+        grid-template-columns: 1fr !important;
+        row-gap: 8px;
+      }
+      .cv-section-title {
+        text-align: left !important;
+        border-right: none !important;
+        border-left: 4px solid var(--primary-color);
+        padding-left: 10px;
+        padding-right: 0 !important;
+      }
+      .cv-divider {
+        margin: 0.85rem 0;
+      }
+    }
+
+    /* Active utility highlights */
+    .btn-active {
+      background-color: var(--primary-color) !important;
+      color: white !important;
+      border-color: var(--primary-color) !important;
+      box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.15);
+    }
+  </style>
+</head>
+<body class="theme-blue">
+
+  <!-- Navigation Header (Excluded from Print exports) -->
+  <header class="no-print bg-slate-900 text-white shadow-lg sticky top-0 z-50 px-4 py-3 border-b border-slate-800">
+    <div class="max-w-6xl mx-auto flex flex-col xl:flex-row items-center justify-between gap-4">
+      
+      <!-- Identity and Context -->
+      <div class="flex items-center gap-3">
+        <div class="bg-gradient-to-tr from-sky-500 to-indigo-600 text-slate-900 font-extrabold p-2.5 rounded-xl text-md flex items-center justify-center h-11 w-11 shadow-inner text-white">
+          CV
+        </div>
+        <div>
+          <h1 class="text-base font-bold tracking-tight">[Candidate Name]</h1>
+          <p class="text-xs text-slate-400">Interactive Resume Template Container (ModernCV Layout style)</p>
+        </div>
+      </div>
+
+      <!-- Actionable Toolbar controls -->
+      <div class="flex flex-wrap items-center justify-center gap-2.5">
+        
+        <!-- Language Selector -->
+        <div class="flex bg-slate-800 p-1 rounded-xl border border-slate-700">
+          <button onclick="toggleLang('en')" id="lang-en-btn" class="px-3 py-1.5 text-xs rounded-lg font-bold transition duration-200 btn-active">
+            🇬🇧 English
+          </button>
+          <button onclick="toggleLang('pl')" id="lang-pl-btn" class="px-3 py-1.5 text-xs rounded-lg font-bold transition duration-200 text-slate-400 hover:text-white">
+            🇵🇱 Polski
+          </button>
+        </div>
+
+        <!-- Palette Theme Configurator -->
+        <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
+          <span class="text-xs text-slate-400">Accent:</span>
+          <div class="flex gap-1.5">
+            <button onclick="applyTheme('theme-blue')" class="w-4 h-4 rounded-full bg-sky-500 border-2 border-white hover:scale-125 transition-transform" title="Modern Blue"></button>
+            <button onclick="applyTheme('theme-purple')" class="w-4 h-4 rounded-full bg-purple-600 border-2 border-white hover:scale-125 transition-transform" title="Purple Accent"></button>
+            <button onclick="applyTheme('theme-emerald')" class="w-4 h-4 rounded-full bg-emerald-600 border-2 border-white hover:scale-125 transition-transform" title="Emerald Green"></button>
+            <button onclick="applyTheme('theme-charcoal')" class="w-4 h-4 rounded-full bg-slate-600 border-2 border-white hover:scale-125 transition-transform" title="Slate Charcoal"></button>
+          </div>
+        </div>
+
+        <!-- View Mode -->
+        <div class="flex bg-slate-800 p-1 rounded-xl border border-slate-700">
+          <button onclick="toggleViewMode('a4')" id="view-a4-btn" class="px-2.5 py-1 text-xs rounded-lg font-medium transition duration-150 btn-active" title="Simulated A4 Paper Sheet">
+            <i class="fa-solid fa-file mr-1"></i> A4 Layout
+          </button>
+          <button onclick="toggleViewMode('fluid')" id="view-fluid-btn" class="px-2.5 py-1 text-xs rounded-lg font-medium transition duration-150 text-slate-400 hover:text-white" title="Responsive web layout">
+            <i class="fa-solid fa-arrows-left-right mr-1"></i> Fluid View
+          </button>
+        </div>
+
+        <!-- RODO Consent dynamic injector -->
+        <div class="flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
+          <label for="rodo-config" class="text-xs text-slate-400">RODO / GDPR Clause:</label>
+          <select id="rodo-config" onchange="refreshRodoClause()" class="bg-slate-900 text-xs text-white border-none rounded focus:ring-1 focus:ring-sky-400 py-0.5 px-1.5 cursor-pointer">
+            <option value="universal">Universal (General)</option>
+            <option value="none">Omit Clause</option>
+          </select>
+        </div>
+
+        <!-- Print/Save Action -->
+        <button onclick="window.print()" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-4 py-1.5 rounded-xl text-xs shadow-md flex items-center gap-2 transition transform active:scale-95 duration-150">
+          <i class="fa-solid fa-print"></i> Print / Save PDF
+        </button>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Exporting Pro-Tip Alert banner -->
+  <div class="no-print max-w-4xl mx-auto mt-4 px-4">
+    <div class="bg-blue-50/90 border-l-4 border-sky-500 p-3.5 rounded-r-xl shadow-sm flex items-start gap-3">
+      <div class="text-sky-600 mt-0.5 flex-shrink-0">
+        <i class="fa-solid fa-lightbulb text-base"></i>
+      </div>
+      <div>
+        <h3 class="text-xs font-bold text-slate-800">Tips for PDF generation:</h3>
+        <p class="text-xs text-slate-600 mt-0.5">
+          In print settings, set destination to <strong class="text-slate-900">Save as PDF</strong>, set margins to <strong class="text-slate-900">"None"</strong>, and enable <strong class="text-slate-900">"Background graphics"</strong>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= ENGLISH CV PAGE CONTAINER ================= -->
+  <main id="cv-english-page" class="cv-page">
+    
+    <!-- Top Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start border-b-2 pb-5 mb-5" style="border-color: var(--primary-color);">
+      <div>
+        <h1 class="text-3xl md:text-4.5xl font-extrabold tracking-tight text-slate-900" style="color: var(--primary-color);">[Candidate Full Name]</h1>
+        <p class="text-lg md:text-xl font-medium mt-1 text-slate-700">[Professional Subtitle / Title Target]</p>
+      </div>
+      <!-- Right Column: Contact details -->
+      <div class="text-left md:text-right text-[11.5px] space-y-1 text-slate-600 mt-3 md:mt-0 font-medium md:min-w-[280px]">
+        <div>[City, Country] <i class="fa-solid fa-location-dot w-4 text-center ml-1.5 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+        <div>[Phone Number] <i class="fa-solid fa-phone w-4 text-center ml-1.5 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+        <div><a href="mailto:email@example.com" class="hover:underline">[Email Address]</a> <i class="fa-solid fa-envelope w-4 text-center ml-1.5 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+        <div><a href="#" class="hover:underline">[GitHub / Website]</a> <i class="fa-brands fa-github w-4 text-center ml-1.5 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+        <div><a href="#" class="hover:underline">[LinkedIn Profile]</a> <i class="fa-brands fa-linkedin w-4 text-center ml-1.5 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+      </div>
+    </div>
+
+    <!-- Inner Grid Structure -->
+    <div class="space-y-4">
+
+      <!-- SECTION: SUMMARY -->
+      <div class="cv-grid">
+        <div class="cv-section-title">Summary</div>
+        <div class="text-xs text-slate-700 leading-relaxed text-justify">
+          [Professional summary paragraph detailing core experience, key tech stack, leadership, and primary technical value proposition.]
+        </div>
+      </div>
+
+      <div class="cv-divider"></div>
+
+      <!-- SECTION: TECHNICAL SKILLS -->
+      <div class="cv-grid page-break-avoid">
+        <div class="cv-section-title">Skills</div>
+        <div class="text-xs space-y-1.5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5">
+            <div>
+              <span class="font-bold text-slate-800">Programming Languages:</span> 
+              <span class="text-slate-600">[Languages List]</span>
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">Frameworks & Libraries:</span> 
+              <span class="text-slate-600">[Frameworks List]</span>
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">Systems & Infrastructure:</span> 
+              <span class="text-slate-600">[Systems & OS List]</span>
+            </div>
+            <div>
+              <span class="font-bold text-slate-800">Databases & APIs:</span> 
+              <span class="text-slate-600">[Databases & API Technologies]</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cv-divider"></div>
+
+      <!-- SECTION: PROFESSIONAL EXPERIENCE -->
+      <div class="cv-grid">
+        <div class="cv-section-title">Experience</div>
+        <div class="space-y-4">
+          
+          <div class="page-break-avoid">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-bold text-sm text-slate-800">[Job Title]</span>
+                <span class="text-slate-500 font-medium text-xs ml-1.5">| [Company Name]</span>
+              </div>
+              <div class="text-right text-xs">
+                <span class="font-semibold text-slate-700">[Date Range]</span><br>
+                <span class="text-slate-400 italic">[Location]</span>
+              </div>
+            </div>
+            <ul class="list-disc pl-4 mt-1.5 text-xs text-slate-600 space-y-1 text-justify">
+              <li>[Key achievement / responsibility bullet point]</li>
+              <li>[Key achievement / responsibility bullet point]</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="cv-divider"></div>
+
+      <!-- SECTION: EDUCATION -->
+      <div class="cv-grid page-break-avoid">
+        <div class="cv-section-title">Education</div>
+        <div class="space-y-3.5">
+          <div>
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-bold text-sm text-slate-800">[Degree / Field of Study]</span>
+                <span class="text-slate-500 font-medium text-xs ml-1.5">| [Institution Name]</span>
+              </div>
+              <div class="text-right text-xs">
+                <span class="font-semibold text-slate-700">[Graduation Year]</span><br>
+                <span class="text-slate-400 italic">[Location]</span>
+              </div>
+            </div>
+            <p class="text-[11.5px] text-slate-600 mt-1">[Educational details, certifications, or focus areas]</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="cv-divider"></div>
+
+      <!-- SECTION: LANGUAGES & CERTIFICATIONS -->
+      <div class="cv-grid page-break-avoid">
+        <div class="cv-section-title">Languages</div>
+        <div class="text-xs grid grid-cols-2 gap-4">
+          <div>
+            <span class="font-bold text-slate-800">Primary Language:</span> 
+            <span class="text-slate-600 ml-1">[Proficiency]</span>
+          </div>
+          <div>
+            <span class="font-bold text-slate-800">Secondary Language:</span> 
+            <span class="text-slate-600 ml-1">[Proficiency]</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Dynamic RODO block wrapper -->
+    <div class="rodo-outer-box mt-6 pt-3.5 border-t border-slate-200 text-[10px] text-slate-400 text-justify leading-tight font-sans">
+      <span class="rodo-content-node"></span>
+    </div>
+
+  </main>
+
+
+  <!-- ================= POLISH CV PAGE CONTAINER ================= -->
+  <main id="cv-polish-page" class="cv-page hidden">
+    
+    <div class="flex flex-col md:flex-row justify-between items-start border-b-2 pb-5 mb-5" style="border-color: var(--primary-color);">
+      <div>
+        <h1 class="text-3xl md:text-4.5xl font-extrabold tracking-tight text-slate-900" style="color: var(--primary-color);">[Imię i Nazwisko]</h1>
+        <p class="text-lg md:text-xl font-medium mt-1 text-slate-700">[Tytuł Zawodowy]</p>
+      </div>
+      <div class="text-left md:text-right text-[11.5px] space-y-1 text-slate-600 mt-3 md:mt-0 font-medium md:min-w-[280px]">
+        <div>[Miasto, Kraj] <i class="fa-solid fa-location-dot w-4 text-center ml-1.5 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+        <div>[Numer Telefonu] <i class="fa-solid fa-phone w-4 text-center ml-1.5 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+        <div><a href="mailto:email@example.com" class="hover:underline">[Adres Email]</a> <i class="fa-solid fa-envelope w-4 text-center ml-1.5 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+        <div><a href="#" class="hover:underline">[GitHub / Strona WWW]</a> <i class="fa-brands fa-github w-4 text-center ml-1.5 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+        <div><a href="#" class="hover:underline">[Profil LinkedIn]</a> <i class="fa-brands fa-linkedin w-4 text-center ml-1.5 text-slate-400 md:inline hidden" style="color: var(--primary-color);"></i></div>
+      </div>
+    </div>
+
+    <div class="space-y-4">
+
+      <!-- SECTION: SUMMARY -->
+      <div class="cv-grid">
+        <div class="cv-section-title">O mnie</div>
+        <div class="text-xs text-slate-700 leading-relaxed text-justify">
+          [Podsumowanie zawodowe z opisem doświadczenia, stosu technologicznego oraz głównych atutów.]
+        </div>
+      </div>
+
+      <div class="cv-divider"></div>
+
+      <!-- SECTION: SKILLS -->
+      <div class="cv-grid page-break-avoid">
+        <div class="cv-section-title">Umiejętności</div>
+        <div class="text-xs space-y-2">
+          <ul class="list-disc pl-4 text-slate-600 space-y-1 text-justify">
+            <li><strong class="text-slate-800">Języki Programowania:</strong> [Lista języków]</li>
+            <li><strong class="text-slate-800">Frameworki i Narzędzia:</strong> [Lista narzędzi]</li>
+            <li><strong class="text-slate-800">Bazy Danych:</strong> [Bazy danych]</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="cv-divider"></div>
+
+      <!-- SECTION: EXPERIENCE -->
+      <div class="cv-grid">
+        <div class="cv-section-title">Doświadczenie</div>
+        <div class="space-y-4">
+          <div class="page-break-avoid">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-bold text-sm text-slate-800">[Stanowisko]</span>
+                <span class="text-slate-500 font-medium text-xs ml-1.5">| [Nazwa Firmy]</span>
+              </div>
+              <div class="text-right text-xs">
+                <span class="font-semibold text-slate-700">[Okres]</span>
+              </div>
+            </div>
+            <ul class="list-disc pl-4 mt-1.5 text-xs text-slate-600 space-y-1 text-justify">
+              <li>[Opis zadań i osiągnięć]</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="cv-divider"></div>
+
+      <!-- SECTION: EDUCATION -->
+      <div class="cv-grid page-break-avoid">
+        <div class="cv-section-title">Wykształcenie</div>
+        <div class="space-y-4">
+          <div>
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-bold text-sm text-slate-800">[Kierunek / Uczelnia]</span>
+              </div>
+              <div class="text-right text-xs">
+                <span class="font-semibold text-slate-700">[Okres]</span>
+              </div>
+            </div>
+            <p class="text-xs text-slate-600 mt-1">[Stopień i kwalifikacje]</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Dynamic RODO block wrapper (Polish View) -->
+    <div class="rodo-outer-box mt-6 pt-3.5 border-t border-slate-200 text-[10px] text-slate-400 text-justify leading-tight font-sans">
+      <span class="rodo-content-node"></span>
+    </div>
+
+  </main>
+
+  <script>
+    const RODO_DATABASE = {
+      universal: `Wyrażam zgodę na przetwarzanie moich danych osobowych dla potrzeb niezbędnych do realizacji procesu rekrutacji (zgodnie z ustawą z dnia 10 maja 2018 roku o ochronie danych osobowych (Dz. Ustaw z 2018, poz. 1000) oraz zgodnie z Rozporządzeniem Parlamentu Europejskiego i Rady (UE) 2016/679 z dnia 27 kwietnia 2016 r. w sprawie ochrony osób fizycznych w związku z przetwarzaniem danych osobowych i w sprawie swobodnego przepływu takich danych oraz uchylenia dyrektywy 95/46/WE (RODO).`,
+      none: ``
+    };
+
+    let currentLanguage = 'en';
+
+    function toggleLang(lang) {
+      currentLanguage = lang;
+      const enPage = document.getElementById('cv-english-page');
+      const plPage = document.getElementById('cv-polish-page');
+      const enBtn = document.getElementById('lang-en-btn');
+      const plBtn = document.getElementById('lang-pl-btn');
+
+      if (lang === 'en') {
+        enPage.classList.remove('hidden');
+        plPage.classList.add('hidden');
+        enBtn.classList.add('btn-active');
+        enBtn.classList.remove('text-slate-400', 'hover:text-white');
+        plBtn.classList.remove('btn-active');
+        plBtn.classList.add('text-slate-400', 'hover:text-white');
+      } else {
+        enPage.classList.add('hidden');
+        plPage.classList.remove('hidden');
+        plBtn.classList.add('btn-active');
+        plBtn.classList.remove('text-slate-400', 'hover:text-white');
+        enBtn.classList.remove('btn-active');
+        enBtn.classList.add('text-slate-400', 'hover:text-white');
+      }
+    }
+
+    function applyTheme(className) {
+      document.body.className = className;
+    }
+
+    function toggleViewMode(mode) {
+      const pages = document.querySelectorAll('.cv-page');
+      const a4Btn = document.getElementById('view-a4-btn');
+      const fluidBtn = document.getElementById('view-fluid-btn');
+
+      if (mode === 'fluid') {
+        pages.forEach(page => page.classList.add('cv-fluid-view'));
+        fluidBtn.classList.add('btn-active');
+        fluidBtn.classList.remove('text-slate-400', 'hover:text-white');
+        a4Btn.classList.remove('btn-active');
+        a4Btn.classList.add('text-slate-400', 'hover:text-white');
+      } else {
+        pages.forEach(page => page.classList.remove('cv-fluid-view'));
+        a4Btn.classList.add('btn-active');
+        a4Btn.classList.remove('text-slate-400', 'hover:text-white');
+        fluidBtn.classList.remove('btn-active');
+        fluidBtn.classList.add('text-slate-400', 'hover:text-white');
+      }
+    }
+
+    function refreshRodoClause() {
+      const activeSelection = document.getElementById('rodo-config') ? document.getElementById('rodo-config').value : 'universal';
+      const textToInject = RODO_DATABASE[activeSelection] || RODO_DATABASE['universal'];
+      const contentsNodes = document.querySelectorAll('.rodo-content-node');
+      const outerBoxes = document.querySelectorAll('.rodo-outer-box');
+
+      contentsNodes.forEach(node => { node.textContent = textToInject; });
+      outerBoxes.forEach(box => {
+        if (activeSelection === 'none') { box.classList.add('hidden'); }
+        else { box.classList.remove('hidden'); }
+      });
+    }
+
+    window.onload = function() {
+      refreshRodoClause();
+    };
+  </script>
+</body>
+</html>
