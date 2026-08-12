@@ -305,37 +305,53 @@ fi
 # Override with environment variable if present
 if [[ -n "${GH_TOKEN:-}" ]]; then GITHUB_TOKEN="${GH_TOKEN}"; fi
 
-if [[ "${RECONFIG}" == "true" || ! -f "${CONFIG_FILE}" || ( "${CLOUD_SYNC_ENABLED}" == "true" && -z "${GITHUB_TOKEN}" ) ]]; then
-    echo ""
-    if [[ "${CLOUD_SYNC_ENABLED}" == "true" && -z "${GITHUB_TOKEN}" ]]; then
-        log_warn "Private Cloud Sync is enabled, but no GitHub Personal Access Token (PAT) is configured!"
-    fi
-    
-    read -r -p "☁️ Enable Private GitHub Cloud Sync for encrypted vault database? [y/N]: " SYNC_PROMPT || SYNC_PROMPT="n"
-    if [[ "${SYNC_PROMPT}" =~ ^[Yy](es)?$ ]]; then
-        CLOUD_SYNC_ENABLED="true"
-        if [[ -z "${GITHUB_USER:-}" ]]; then
-            read -r -p "👤 Enter your GitHub Username [default: Vikyek]: " GITHUB_USER || GITHUB_USER="Vikyek"
-            GITHUB_USER="${GITHUB_USER:-Vikyek}"
-        fi
-
-        if [[ -z "${GITHUB_TOKEN:-}" ]]; then
-            read -r -s -p "🔑 Enter your GitHub Personal Access Token (PAT): " GITHUB_TOKEN || GITHUB_TOKEN=""
-            echo ""
-        fi
-
-        read -r -p "📦 Enter Private Vault Repo Name [default: vltimate-cv-vault]: " INPUT_REPO || INPUT_REPO=""
-        if [[ -n "${INPUT_REPO}" ]]; then VAULT_REPO="${INPUT_REPO}"; fi
-
-        cat <<EOF > "${CONFIG_FILE}"
+# Helper: persist current config values to disk
+save_config() {
+    cat <<EOF > "${CONFIG_FILE}"
 CLOUD_SYNC_ENABLED="${CLOUD_SYNC_ENABLED}"
 GITHUB_USER="${GITHUB_USER}"
 GITHUB_TOKEN="${GITHUB_TOKEN}"
 VAULT_REPO="${VAULT_REPO}"
 PUBLIC_REPO="${PUBLIC_REPO}"
 EOF
-        chmod 600 "${CONFIG_FILE}"
-        log_info "Config saved to './.vltimate_config.env' (gitignored)."
+    chmod 600 "${CONFIG_FILE}"
+    log_info "Config saved to './.vltimate_config.env' (gitignored)."
+}
+
+if [[ "${CLOUD_SYNC_ENABLED}" == "true" && -z "${GITHUB_TOKEN:-}" && "${RECONFIG}" != "true" ]]; then
+    # Sync is already enabled but token is missing — prompt for just the token
+    echo ""
+    log_warn "Private Cloud Sync is enabled, but no GitHub Personal Access Token (PAT) is configured!"
+    read -r -s -p "🔑 Enter your GitHub Personal Access Token (PAT): " GITHUB_TOKEN || GITHUB_TOKEN=""
+    echo ""
+    if [[ -n "${GITHUB_TOKEN}" ]]; then
+        save_config
+    else
+        log_warn "No token provided. Private Cloud Sync will be skipped for this run."
+    fi
+elif [[ "${RECONFIG}" == "true" || ! -f "${CONFIG_FILE}" ]]; then
+    echo ""
+    read -r -p "☁️ Enable Private GitHub Cloud Sync for encrypted vault database? [y/N]: " SYNC_PROMPT || SYNC_PROMPT="n"
+    if [[ "${SYNC_PROMPT}" =~ ^[Yy](es)?$ ]]; then
+        CLOUD_SYNC_ENABLED="true"
+        if [[ -z "${GITHUB_USER:-}" || "${GITHUB_USER}" == "Vikyek" ]]; then
+            read -r -p "👤 Enter your GitHub Username [default: Vikyek]: " GITHUB_USER || GITHUB_USER="Vikyek"
+            GITHUB_USER="${GITHUB_USER:-Vikyek}"
+        else
+            log_info "Detected GitHub Username: '${GITHUB_USER}'"
+        fi
+
+        if [[ -z "${GITHUB_TOKEN:-}" ]]; then
+            read -r -s -p "🔑 Enter your GitHub Personal Access Token (PAT): " GITHUB_TOKEN || GITHUB_TOKEN=""
+            echo ""
+        else
+            log_info "Detected GitHub Personal Access Token from environment variable."
+        fi
+
+        read -r -p "📦 Enter Private Vault Repo Name [default: ${VAULT_REPO}]: " INPUT_REPO || INPUT_REPO=""
+        if [[ -n "${INPUT_REPO}" ]]; then VAULT_REPO="${INPUT_REPO}"; fi
+
+        save_config
     fi
 fi
 
