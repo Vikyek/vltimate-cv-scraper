@@ -1,0 +1,57 @@
+.\" Manpage for Vltimate CV Scraper
+.TH VLTIMATE-CV-SCRAPER 1 "12 August 2026" "v2.0" "Vltimate CV Scraper Manual"
+.SH NAME
+vltimate-cv-scraper \- Technical Intelligence Harvester, ATS Resume Generator & Encryption Vault Engine
+.SH SYNOPSIS
+.B harvest_cv.sh
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+.B Vltimate CV Scraper
+is an automated, privacy-conscious technical intelligence harvester and ATS resume engine. It scans local system architecture, shell command history, git configurations, and remote GitHub repositories to build an unformatted master knowledge base (\fBraw_technical_profile.md\fR) and generate ATS-optimized single-column HTML resumes (\fBcv_en.html\fR and \fBcv_pl.html\fR) and headless PDF exports (\fBcv_en.pdf\fR and \fBcv_pl.pdf\fR).
+
+It supports AES-256 and GPG encryption, job description tailoring, visual experience diff tracking, persistent credential management, and autonomous private cloud synchronization on GitHub.
+
+.SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Display command usage and options summary.
+.TP
+.BR \-t ", " \-\-tailor " \fI<FILE_OR_URL>\fR"
+Tailor resume summary, keyword badges, and experience bullet points specifically to a job description text file or web URL.
+.TP
+.BR \-p ", " \-\-pdf
+Force immediate headless PDF compilation using Google Chrome.
+.TP
+.BR \-d ", " \-\-diff
+Generate a visual experience diff log (\fBharvest_diff.log\fR) comparing current harvested data against previous runs.
+.TP
+.BR \-e ", " \-\-encrypt-mode " \fI<aes|gpg>\fR"
+Select encryption engine: \fBaes\fR (OpenSSL AES-256-CBC, default) or \fBgpg\fR (GPG key encryption).
+.TP
+.BR \-\-gui
+Open interactive customization GUI in Google Chrome to set default PDF themes and RODO options.
+.TP
+.BR \-c ", " \-\-config
+Reconfigure persistent GitHub credentials and private cloud sync settings (\fB.vltimate_config.env\fR).
+
+.SH FILES
+.TP
+.I .vltimate_config.env
+Local configuration file storing GitHub credentials and private vault settings (strictly gitignored).
+.TP
+.I .pdf_customization.json
+Saved PDF rendering preferences (theme, language, paper size, RODO options).
+.TP
+.I raw_technical_profile.md
+Master technical knowledge base (gitignored plain text, packed in encrypted archive).
+.TP
+.I personal_data.tar.gz.enc
+AES-256 / GPG encrypted personal profile archive.
+.TP
+.I harvest_diff.log
+Visual experience diff tracker log.
+
+.SH BUGS
+Report bugs to <https://github.com/Vikyek/vltimate-cv-scraper/issues>.
+.SH AUTHOR
+Viktoria Jędrzejczyk (Vikyek) <vika.jedr@gmail.com>
