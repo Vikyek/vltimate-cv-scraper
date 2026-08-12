@@ -125,9 +125,17 @@ EOF
 # EMOJI FONT DETECTION & GLYPH INITIALIZATION
 # ------------------------------------------------------------------------------
 has_emoji_font() {
+    # Check 1: Is a color emoji font prioritized in monospace fallback chain?
+    if command -v fc-match &>/dev/null; then
+        if fc-match -s monospace 2>/dev/null | head -n 5 | grep -iE 'color emoji|emoji|twemoji|joypixels' &>/dev/null; then
+            return 0
+        fi
+    fi
+    # Check 2: Is a color emoji font installed at all? (weaker check)
     if command -v fc-list &>/dev/null; then
         if fc-list :family 2>/dev/null | grep -iE 'color emoji|emoji|twemoji|joypixels' &>/dev/null; then
-            return 0
+            # Font exists on disk but isn't prioritized for monospace — still broken
+            return 1
         fi
     fi
     return 1
@@ -165,6 +173,11 @@ init_glyphs() {
 
 # Prompt user if missing emoji font support is detected
 check_and_prompt_emoji_font() {
+    # Always check font rendering — USE_SIMPLE_GLYPHS="true" is the ONLY skip condition
+    if [[ "${USE_SIMPLE_GLYPHS}" == "true" ]]; then
+        init_glyphs
+        return 0
+    fi
     if ! has_emoji_font; then
         echo -e "${C_GOLD}▲ WARNING: No Color Emoji Font (e.g. Noto Color Emoji) detected on your system!${C_RESET}"
         echo -e "${C_CYAN}Rich color emojis (🌌, ✨, 💎, 🔒) may render as broken wireframe boxes in your terminal.${C_RESET}\n"
