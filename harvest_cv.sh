@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Vltimate CV Scraper v3.2 (Production Master)
+# Vltimate CV Scraper v3.3 (Production Master)
 # Usage: ./harvest_cv.sh [OPTIONS]
-# Features:
-#   - Clear notification when GitHub Token is missing for private vault creation
-#   - Persistent local unencrypted preview ('./local_preview/') for local viewing
-#   - Quoted relative path formatting ('./output/', './input/', './local_preview/')
-#   - Customization GUI re-use prompt ([y/N] default keep)
-#   - Env var detection (bypasses prompts if DECRYPT_PASS / ENCRYPT_PASS / GH_TOKEN set)
-#   - Interactive encryption method selector & clean [Y/n] default prompting
-#   - Interrupted run recovery & state checkpointing (.checkpoint.json)
-#   - Animated CLI Braille spinner for long-running agy tasks
-#   - Automated data conflict audit gate & JD tailoring
+# Changes in v3.3:
+#   - Configs moved to './config/' subdir with tracked default templates
+#   - Masked secret input (shows * characters)
+#   - Crash-resilient run_with_spinner (handles agy timeouts gracefully)
+#   - HTML GUI auto-opens correctly (fixed undefined TEMPLATE_FILE)
+#   - Removed "(gitignored)" from output messages
+#   - Intelligence source reporting during harvest
 # ==============================================================================
 
 set -euo pipefail
@@ -22,14 +19,16 @@ OUTPUT_DIR="${SCRIPT_DIR}/output"
 ARCHIVE_DIR="${SCRIPT_DIR}/archives"
 LOCAL_PREVIEW_DIR="${SCRIPT_DIR}/local_preview"
 LOG_DIR="${SCRIPT_DIR}/logs"
-CONFIG_FILE="${SCRIPT_DIR}/.vltimate_config.env"
-PDF_CUSTOM_FILE="${SCRIPT_DIR}/.pdf_customization.json"
-CHECKPOINT_FILE="${SCRIPT_DIR}/.checkpoint.json"
+CONFIG_DIR="${SCRIPT_DIR}/config"
+CONFIG_FILE="${CONFIG_DIR}/vltimate_config.env"
+PDF_CUSTOM_FILE="${CONFIG_DIR}/pdf_customization.json"
+CHECKPOINT_FILE="${CONFIG_DIR}/checkpoint.json"
 DIFF_LOG_FILE="${SCRIPT_DIR}/harvest_diff.log"
-AUDIT_FILE="${SCRIPT_DIR}/.conflict_audit.json"
+AUDIT_FILE="${CONFIG_DIR}/conflict_audit.json"
 VAULT_DIR="${SCRIPT_DIR}/.vault_tmp"
 
 SYSTEM_PROMPT_FILE="${SCRIPT_DIR}/cv_harvester_system_prompt.md"
+TEMPLATE_FILE="${SCRIPT_DIR}/cv_template.html"
 
 OUTPUT_PROFILE="${OUTPUT_DIR}/raw_technical_profile.md"
 INPUT_PROFILE="${INPUT_DIR}/raw_technical_profile.md"
@@ -66,9 +65,9 @@ RECONFIG="false"
 ONLY_VIEW="false"
 
 # ------------------------------------------------------------------------------
-# DETAILED LOGGING ENGINE & CLEAN CONSOLE OUTPUT
+# LOGGING ENGINE & CLEAN CONSOLE OUTPUT
 # ------------------------------------------------------------------------------
-mkdir -p "${LOG_DIR}"
+mkdir -p "${LOG_DIR}" "${CONFIG_DIR}"
 LOG_FILE="${LOG_DIR}/harvest_$(date +'%Y-%m-%d_%H%M%S').log"
 
 log_info() {
@@ -119,7 +118,32 @@ clear_checkpoint() {
 }
 
 # ------------------------------------------------------------------------------
-# ANIMATED CLI SPINNER FOR LONG-RUNNING TASKS
+# MASKED SECRET INPUT (shows * for each character)
+# ------------------------------------------------------------------------------
+read_secret() {
+    local prompt="$1"
+    local input=""
+    local char=""
+    printf "%s" "$prompt" >&2
+    while IFS= read -r -s -n1 char; do
+        if [[ -z "$char" ]]; then
+            break
+        elif [[ "$char" == $'\x7f' || "$char" == $'\b' ]]; then
+            if [[ -n "$input" ]]; then
+                input="${input%?}"
+                printf "\b \b" >&2
+            fi
+        else
+            input+="$char"
+            printf "*" >&2
+        fi
+    done
+    echo "" >&2
+    echo "$input"
+}
+
+# ------------------------------------------------------------------------------
+# ANIMATED CLI SPINNER (crash-resilient)
 # ------------------------------------------------------------------------------
 show_spinner() {
     local pid=$1
@@ -136,7 +160,6 @@ show_spinner() {
     done
     
     tput cnorm 2>/dev/null || true
-    printf "\r\e[K \e[32m✔\e[0m \e[1m%s\e[0m (Completed)\n" "${msg}" >&2
 }
 
 run_with_spinner() {
@@ -145,7 +168,15 @@ run_with_spinner() {
     "$@" >> "${LOG_FILE}" 2>&1 &
     local pid=$!
     show_spinner "$pid" "$msg"
-    wait "$pid"
+    local exit_code=0
+    wait "$pid" || exit_code=$?
+    if [[ $exit_code -ne 0 ]]; then
+        printf "\r\e[K \e[31m✘\e[0m \e[1m%s\e[0m (Failed — see log)\n" "${msg}" >&2
+        log_err "${msg} failed with exit code ${exit_code}. Check '${LOG_FILE}' for details."
+        return $exit_code
+    else
+        printf "\r\e[K \e[32m✔\e[0m \e[1m%s\e[0m (Completed)\n" "${msg}" >&2
+    fi
 }
 
 # ------------------------------------------------------------------------------
@@ -153,7 +184,7 @@ run_with_spinner() {
 # ------------------------------------------------------------------------------
 show_help() {
     cat <<EOF
-Vltimate CV Scraper v3.2 - Technical Intelligence Harvester & ATS Engine
+Vltimate CV Scraper v3.3 - Technical Intelligence Harvester & ATS Engine
 
 USAGE:
   ./harvest_cv.sh [OPTIONS]
@@ -163,11 +194,11 @@ OPTIONS:
   -v, --verbose             Print ISO timestamps in live console output
   --view                    Open local preview HTML resume in Google Chrome
   -t, --tailor <FILE|URL>   Tailor summary, keywords, & bullet points to a Job Description
-  -p, --pdf                 Force automated headless PDF export (output/cv_en.pdf & cv_pl.pdf)
-  -d, --diff                Generate visual experience diff log ('./harvest_diff.log')
+  -p, --pdf                 Force automated headless PDF export
+  -d, --diff                Generate visual experience diff log
   -i, --interactive         Enable interactive prompt edit & conflict resolution loop
   -e, --encrypt-mode <TYPE> Set encryption backend: 'aes' (default) or 'gpg'
-  --gui                     Open customization GUI in Google Chrome to set themes/RODO options
+  --gui                     Open customization GUI in Google Chrome
   -c, --config              Reconfigure GitHub token & private cloud sync options
 EOF
     exit 0
@@ -200,9 +231,26 @@ if [[ "${ONLY_VIEW}" == "true" ]]; then
 fi
 
 echo "======================================================================"
-log_info "Starting Vltimate CV Scraper v3.2"
+log_info "Starting Vltimate CV Scraper v3.3"
 log_info "Execution Log File: '${LOG_FILE}'"
 echo "======================================================================"
+
+# ------------------------------------------------------------------------------
+# MIGRATE LEGACY CONFIG FILES TO './config/' SUBDIR
+# ------------------------------------------------------------------------------
+if [[ -f "${SCRIPT_DIR}/.vltimate_config.env" && ! -f "${CONFIG_FILE}" ]]; then
+    cp -f "${SCRIPT_DIR}/.vltimate_config.env" "${CONFIG_FILE}"
+    chmod 600 "${CONFIG_FILE}"
+    log_info "Migrated legacy config to './config/vltimate_config.env'"
+fi
+if [[ -f "${SCRIPT_DIR}/.pdf_customization.json" && ! -f "${PDF_CUSTOM_FILE}" ]]; then
+    cp -f "${SCRIPT_DIR}/.pdf_customization.json" "${PDF_CUSTOM_FILE}"
+    log_info "Migrated legacy PDF customization to './config/pdf_customization.json'"
+fi
+if [[ -f "${SCRIPT_DIR}/.checkpoint.json" && ! -f "${CHECKPOINT_FILE}" ]]; then
+    cp -f "${SCRIPT_DIR}/.checkpoint.json" "${CHECKPOINT_FILE}"
+    log_info "Migrated legacy checkpoint to './config/checkpoint.json'"
+fi
 
 # ------------------------------------------------------------------------------
 # INTERRUPTED RUN RECOVERY & CHECKPOINT RESTART
@@ -258,7 +306,7 @@ rm -f "${SCRIPT_DIR}/cv_en.html" "${SCRIPT_DIR}/cv_pl.html" "${SCRIPT_DIR}/cv_en
 # STEP 1: Customization Memory & GUI Trigger Logic
 # ------------------------------------------------------------------------------
 if [[ -f "${PDF_CUSTOM_FILE}" && "${OPEN_GUI}" != "true" ]]; then
-    log_info "Existing layout customization found in './.pdf_customization.json'."
+    log_info "Existing layout customization found in './config/pdf_customization.json'."
     read -r -p "🎨 Re-open Chrome HTML GUI to change layout options? [y/N]: " OPEN_GUI_PROMPT || OPEN_GUI_PROMPT="n"
     if [[ "${OPEN_GUI_PROMPT}" =~ ^[Yy](es)?$ ]]; then
         OPEN_GUI="true"
@@ -267,8 +315,10 @@ fi
 
 if [[ "${OPEN_GUI}" == "true" || ! -f "${PDF_CUSTOM_FILE}" ]]; then
     if [[ ! -f "${PDF_CUSTOM_FILE}" ]]; then
-        log_info "No layout customization found. Creating default customization config..."
-        cat <<EOF > "${PDF_CUSTOM_FILE}"
+        if [[ -f "${CONFIG_DIR}/pdf_customization.template.json" ]]; then
+            cp -f "${CONFIG_DIR}/pdf_customization.template.json" "${PDF_CUSTOM_FILE}"
+        else
+            cat <<EOF > "${PDF_CUSTOM_FILE}"
 {
   "theme": "theme-blue",
   "language": "en",
@@ -278,13 +328,19 @@ if [[ "${OPEN_GUI}" == "true" || ! -f "${PDF_CUSTOM_FILE}" ]]; then
   "backgroundGraphics": true
 }
 EOF
+        fi
+        log_info "Created layout customization from default template."
     fi
 
     log_info "Opening layout customization GUI in Google Chrome..."
     if [[ -f "${OUTPUT_CV_HTML}" ]]; then
         google-chrome-stable "file://${OUTPUT_CV_HTML}" &>/dev/null &
-    else
+    elif [[ -f "${LOCAL_PREVIEW_DIR}/cv.html" ]]; then
+        google-chrome-stable "file://${LOCAL_PREVIEW_DIR}/cv.html" &>/dev/null &
+    elif [[ -f "${TEMPLATE_FILE}" ]]; then
         google-chrome-stable "file://${TEMPLATE_FILE}" &>/dev/null &
+    else
+        log_warn "No HTML resume or template found to open. Skipping GUI."
     fi
     echo ""
     read -r -p "🎨 Adjust options in Chrome, click 'Save Config', then press Enter to continue: " _UNUSED || true
@@ -315,15 +371,13 @@ VAULT_REPO="${VAULT_REPO}"
 PUBLIC_REPO="${PUBLIC_REPO}"
 EOF
     chmod 600 "${CONFIG_FILE}"
-    log_info "Config saved to './.vltimate_config.env' (gitignored)."
+    log_info "Config saved to './config/vltimate_config.env'."
 }
 
 if [[ "${CLOUD_SYNC_ENABLED}" == "true" && -z "${GITHUB_TOKEN:-}" && "${RECONFIG}" != "true" ]]; then
-    # Sync is already enabled but token is missing — prompt for just the token
     echo ""
     log_warn "Private Cloud Sync is enabled, but no GitHub Personal Access Token (PAT) is configured!"
-    read -r -s -p "🔑 Enter your GitHub Personal Access Token (PAT): " GITHUB_TOKEN || GITHUB_TOKEN=""
-    echo ""
+    GITHUB_TOKEN="$(read_secret "🔑 Enter your GitHub Personal Access Token (PAT): ")"
     if [[ -n "${GITHUB_TOKEN}" ]]; then
         save_config
     else
@@ -342,8 +396,7 @@ elif [[ "${RECONFIG}" == "true" || ! -f "${CONFIG_FILE}" ]]; then
         fi
 
         if [[ -z "${GITHUB_TOKEN:-}" ]]; then
-            read -r -s -p "🔑 Enter your GitHub Personal Access Token (PAT): " GITHUB_TOKEN || GITHUB_TOKEN=""
-            echo ""
+            GITHUB_TOKEN="$(read_secret "🔑 Enter your GitHub Personal Access Token (PAT): ")"
         else
             log_info "Detected GitHub Personal Access Token from environment variable."
         fi
@@ -383,10 +436,10 @@ if [[ "${CLOUD_SYNC_ENABLED:-}" == "true" && -n "${GITHUB_USER:-}" && -n "${GITH
             log_info "Latest encrypted cloud database downloaded."
         fi
     else
-        log_info "Private vault repository '${GITHUB_USER}/${VAULT_REPO}' will be created on GitHub upon first encryption."
+        log_info "Private vault repository '${GITHUB_USER}/${VAULT_REPO}' will be created upon first encryption."
     fi
 elif [[ "${CLOUD_SYNC_ENABLED:-}" == "true" && -z "${GITHUB_TOKEN:-}" ]]; then
-    log_warn "Skipping Private Cloud Sync because GitHub Token is missing. Run './harvest_cv.sh -c' to configure token."
+    log_warn "Skipping Private Cloud Sync — no GitHub Token. Run './harvest_cv.sh -c' to configure."
 fi
 
 # ------------------------------------------------------------------------------
@@ -394,12 +447,11 @@ fi
 # ------------------------------------------------------------------------------
 if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" ]]; then
     if [[ -f "${ENCRYPTED_ARCHIVE}" ]]; then
-        log_info "Encrypted personal archive detected: '${ENCRYPTED_ARCHIVE}'"
+        log_info "Encrypted personal archive detected: './personal_data.tar.gz.enc'"
         if [[ -n "${DECRYPT_PASS:-}" ]]; then
             log_info "Using decryption password from environment variable."
         else
-            read -r -s -p "🔑 Enter decryption password: " DECRYPT_PASS || DECRYPT_PASS=""
-            echo ""
+            DECRYPT_PASS="$(read_secret "🔑 Enter decryption password: ")"
         fi
 
         TEMP_TAR="$(mktemp --suffix=.tar.gz)"
@@ -425,7 +477,7 @@ if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" ]]; then
     SNAPSHOT_FILE="${ARCHIVE_DIR}/snapshot_${TIMESTAMP}.tar.gz"
 
     if [[ -f "${OUTPUT_PROFILE}" || -f "${INPUT_PROFILE}" ]]; then
-        log_info "Creating snapshot archive: '${SNAPSHOT_FILE}'"
+        log_info "Creating snapshot archive: './archives/snapshot_${TIMESTAMP}.tar.gz'"
         tar -czf "${SNAPSHOT_FILE}" -C "${SCRIPT_DIR}" "input" "output" 2>/dev/null || true
         cp -rf "${OUTPUT_DIR}"/* "${INPUT_DIR}/" 2>/dev/null || true
         save_checkpoint "STATE_SNAPSHOT_CREATED"
@@ -437,7 +489,7 @@ fi
 # ------------------------------------------------------------------------------
 if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" || "${RESUME_STATE}" == "STATE_SNAPSHOT_CREATED" ]]; then
     if [[ ! -f "${SYSTEM_PROMPT_FILE}" ]]; then
-        log_err "System prompt missing at '${SYSTEM_PROMPT_FILE}'"
+        log_err "System prompt missing at './cv_harvester_system_prompt.md'"
         exit 1
     fi
 
@@ -453,53 +505,86 @@ if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" || "${RESUM
         PROMPT="${PROMPT} Tailor the summary, keyword badges, and experience bullet points specifically for Job Description: ${JD_CONTENT}."
     fi
 
-    PROMPT="${PROMPT} Perform harvesting across system, shell history, git repos, and GitHub profile. Save updated knowledge base into '${OUTPUT_PROFILE}' and generate unified bilingual interactive HTML resume into '${OUTPUT_CV_HTML}'."
+    # Intelligence source reporting instructions
+    PROMPT="${PROMPT} Perform harvesting across system, shell history, git repos, and GitHub profile."
+    PROMPT="${PROMPT} When scanning, report each new intelligence source found (e.g. 'Scanning local git repos...', 'Found GitHub repo: <name> [NEW]', 'Scanning shell history...', 'Found loose script: <path> [KNOWN]', 'Scanning online GitHub profile...', 'Found linked profile: <url> [NEW]'). Mark sources as [NEW] if not present in past collected intel, or [KNOWN] if already present."
+    PROMPT="${PROMPT} Save updated knowledge base into '${OUTPUT_PROFILE}' and generate unified bilingual interactive HTML resume into '${OUTPUT_CV_HTML}'."
 
     save_checkpoint "STATE_HARVEST_STARTED"
-    run_with_spinner "Harvesting technical intelligence with agy..." agy --dangerously-skip-permissions --print "${PROMPT}"
-    save_checkpoint "STATE_HARVEST_COMPLETED"
+    if run_with_spinner "Harvesting technical intelligence with agy..." agy --dangerously-skip-permissions --print "${PROMPT}"; then
+        save_checkpoint "STATE_HARVEST_COMPLETED"
+    else
+        log_err "Intelligence harvesting failed or timed out."
+        log_warn "You can retry by running './harvest_cv.sh' again (checkpoint will offer resume)."
+        echo ""
+        echo "  1) Retry harvest now"
+        echo "  2) Continue anyway (use existing data in './output/' if available)"
+        echo "  3) Abort"
+        read -r -p "Select option [1-3]: " RECOVERY_CHOICE || RECOVERY_CHOICE="3"
+        case "${RECOVERY_CHOICE}" in
+            1)
+                log_info "Retrying intelligence harvest..."
+                if run_with_spinner "Retrying harvest with agy..." agy --dangerously-skip-permissions --print "${PROMPT}"; then
+                    save_checkpoint "STATE_HARVEST_COMPLETED"
+                else
+                    log_err "Retry also failed. Continuing with existing data..."
+                fi
+                ;;
+            2)
+                log_warn "Continuing with existing data in './output/'..."
+                ;;
+            3)
+                log_info "Aborted by user."
+                exit 0
+                ;;
+        esac
+    fi
 fi
 
 # ------------------------------------------------------------------------------
 # STEP 5B: Automated Data Conflict Audit & Conditional Resolution Gate
 # ------------------------------------------------------------------------------
-AUDIT_PROMPT="Read '${OUTPUT_PROFILE}'. Perform a strict conflict & inconsistency audit. Check for conflicting dates, contradictory technical entries, or duplicate experience claims. Write a JSON result into '${AUDIT_FILE}' formatted as: {\"has_conflicts\": false, \"conflicts\": []} if clean, or {\"has_conflicts\": true, \"conflicts\": [\"description of conflict\"]} if issues are found."
+if [[ -f "${OUTPUT_PROFILE}" ]]; then
+    AUDIT_PROMPT="Read '${OUTPUT_PROFILE}'. Perform a strict conflict & inconsistency audit. Check for conflicting dates, contradictory technical entries, or duplicate experience claims. Write a JSON result into '${AUDIT_FILE}' formatted as: {\"has_conflicts\": false, \"conflicts\": []} if clean, or {\"has_conflicts\": true, \"conflicts\": [\"description of conflict\"]} if issues are found."
 
-run_with_spinner "Executing automated data conflict audit with agy..." agy --dangerously-skip-permissions --print "${AUDIT_PROMPT}" || true
+    run_with_spinner "Executing automated data conflict audit with agy..." agy --dangerously-skip-permissions --print "${AUDIT_PROMPT}" || true
 
-HAS_CONFLICTS="false"
-if [[ -f "${AUDIT_FILE}" ]]; then
-    if grep -q '"has_conflicts": true' "${AUDIT_FILE}" || grep -q '"has_conflicts":true' "${AUDIT_FILE}"; then
-        HAS_CONFLICTS="true"
-    fi
-fi
-
-if [[ "${HAS_CONFLICTS}" == "true" ]]; then
-    echo "======================================================================"
-    log_warn "⚠️ CONFLICT DETECTED IN HARVESTED TECHNICAL DATA!"
-    echo "======================================================================"
-    cat "${AUDIT_FILE}"
-    echo "----------------------------------------------------------------------"
-    log_warn "Conflict resolution is REQUIRED before proceeding to PDF generation!"
-    
-    while [[ "${HAS_CONFLICTS}" == "true" ]]; do
-        read -r -p "💬 Enter your instruction / resolution for agy: " RESOLUTION_INPUT || RESOLUTION_INPUT=""
-        if [[ -n "${RESOLUTION_INPUT}" ]]; then
-            RESOLVE_PROMPT="Read '${OUTPUT_PROFILE}' and '${OUTPUT_CV_HTML}'. Resolve this conflict according to user instruction: ${RESOLUTION_INPUT}. Update both files, then re-audit and update '${AUDIT_FILE}' with has_conflicts: false if resolved."
-            run_with_spinner "Applying conflict resolution pass with agy..." agy --dangerously-skip-permissions --print "${RESOLVE_PROMPT}"
-            
-            if grep -q '"has_conflicts": false' "${AUDIT_FILE}" 2>/dev/null || grep -q '"has_conflicts":false' "${AUDIT_FILE}" 2>/dev/null; then
-                HAS_CONFLICTS="false"
-                log_info "✅ Conflict successfully resolved!"
-            else
-                log_warn "Re-audit indicates lingering conflicts. Please provide additional resolution detail."
-            fi
+    HAS_CONFLICTS="false"
+    if [[ -f "${AUDIT_FILE}" ]]; then
+        if grep -q '"has_conflicts": true' "${AUDIT_FILE}" || grep -q '"has_conflicts":true' "${AUDIT_FILE}"; then
+            HAS_CONFLICTS="true"
         fi
-    done
+    fi
+
+    if [[ "${HAS_CONFLICTS}" == "true" ]]; then
+        echo "======================================================================"
+        log_warn "⚠️ CONFLICT DETECTED IN HARVESTED TECHNICAL DATA!"
+        echo "======================================================================"
+        cat "${AUDIT_FILE}"
+        echo "----------------------------------------------------------------------"
+        log_warn "Conflict resolution is REQUIRED before proceeding to PDF generation!"
+        
+        while [[ "${HAS_CONFLICTS}" == "true" ]]; do
+            read -r -p "💬 Enter your instruction / resolution for agy: " RESOLUTION_INPUT || RESOLUTION_INPUT=""
+            if [[ -n "${RESOLUTION_INPUT}" ]]; then
+                RESOLVE_PROMPT="Read '${OUTPUT_PROFILE}' and '${OUTPUT_CV_HTML}'. Resolve this conflict according to user instruction: ${RESOLUTION_INPUT}. Update both files, then re-audit and update '${AUDIT_FILE}' with has_conflicts: false if resolved."
+                run_with_spinner "Applying conflict resolution pass with agy..." agy --dangerously-skip-permissions --print "${RESOLVE_PROMPT}" || true
+                
+                if grep -q '"has_conflicts": false' "${AUDIT_FILE}" 2>/dev/null || grep -q '"has_conflicts":false' "${AUDIT_FILE}" 2>/dev/null; then
+                    HAS_CONFLICTS="false"
+                    log_info "✅ Conflict successfully resolved!"
+                else
+                    log_warn "Re-audit indicates lingering conflicts. Please provide additional resolution detail."
+                fi
+            fi
+        done
+    else
+        echo "======================================================================"
+        log_info "✅ Technical Data Audit Passed: Zero data conflicts or date contradictions detected."
+        echo "======================================================================"
+    fi
 else
-    echo "======================================================================"
-    log_info "✅ Technical Data Audit Passed: Zero data conflicts or date contradictions detected."
-    echo "======================================================================"
+    log_warn "No output profile found. Skipping conflict audit."
 fi
 
 # ------------------------------------------------------------------------------
@@ -529,12 +614,12 @@ if [[ "${INTERACTIVE_LOOP}" == "true" ]]; then
                 read -r -p "💬 Enter your instruction / revision for agy: " USER_FEEDBACK || USER_FEEDBACK=""
                 if [[ -n "${USER_FEEDBACK}" ]]; then
                     REVISE_PROMPT="Read '${SYSTEM_PROMPT_FILE}', '${OUTPUT_PROFILE}', and '${OUTPUT_CV_HTML}'. Apply instruction: ${USER_FEEDBACK}. Update '${OUTPUT_PROFILE}' and '${OUTPUT_CV_HTML}'."
-                    run_with_spinner "Executing revision pass with agy..." agy --dangerously-skip-permissions --print "${REVISE_PROMPT}"
+                    run_with_spinner "Executing revision pass with agy..." agy --dangerously-skip-permissions --print "${REVISE_PROMPT}" || true
                     log_info "Revision applied."
                 fi
                 ;;
             4)
-                run_with_spinner "Re-running full intelligence harvest with agy..." agy --dangerously-skip-permissions --print "${PROMPT}"
+                run_with_spinner "Re-running full intelligence harvest with agy..." agy --dangerously-skip-permissions --print "${PROMPT}" || true
                 ;;
             *)
                 log_warn "Invalid option. Select 1 to approve."
@@ -547,9 +632,9 @@ fi
 # STEP 7: Headless PDF Generation & Persistent Local Preview Creation
 # ------------------------------------------------------------------------------
 if [[ -f "${OUTPUT_CV_HTML}" ]]; then
-    run_with_spinner "Rendering pixel-perfect headless PDFs..." google-chrome-stable --headless --disable-gpu --print-to-pdf="${OUTPUT_DIR}/cv_en.pdf" "file://${OUTPUT_CV_HTML}"
+    run_with_spinner "Rendering pixel-perfect headless PDFs..." google-chrome-stable --headless --disable-gpu --print-to-pdf="${OUTPUT_DIR}/cv_en.pdf" "file://${OUTPUT_CV_HTML}" || true
     google-chrome-stable --headless --disable-gpu --print-to-pdf="${OUTPUT_DIR}/cv_pl.pdf" "file://${OUTPUT_CV_HTML}" &>/dev/null || true
-    log_info "Rendered '${OUTPUT_DIR}/cv_en.pdf' & '${OUTPUT_DIR}/cv_pl.pdf'"
+    log_info "Rendered './output/cv_en.pdf' & './output/cv_pl.pdf'"
     save_checkpoint "STATE_PDF_RENDERED"
 
     # Populate Persistent Local Unencrypted Preview Subdirectory (Never uploaded/synced)
@@ -558,7 +643,7 @@ if [[ -f "${OUTPUT_CV_HTML}" ]]; then
     if [[ -f "${OUTPUT_CV_HTML}" ]]; then cp -f "${OUTPUT_CV_HTML}" "${LOCAL_PREVIEW_DIR}/cv.html"; fi
     if [[ -f "${OUTPUT_DIR}/cv_en.pdf" ]]; then cp -f "${OUTPUT_DIR}/cv_en.pdf" "${LOCAL_PREVIEW_DIR}/cv_en.pdf"; fi
     if [[ -f "${OUTPUT_DIR}/cv_pl.pdf" ]]; then cp -f "${OUTPUT_DIR}/cv_pl.pdf" "${LOCAL_PREVIEW_DIR}/cv_pl.pdf"; fi
-    log_info "Saved persistent unencrypted local preview to './local_preview/'"
+    log_info "Saved persistent local preview to './local_preview/'"
 fi
 
 if [[ "${ENABLE_DIFF}" == "true" && -f "${INPUT_PROFILE}" && -f "${OUTPUT_PROFILE}" ]]; then
@@ -567,7 +652,7 @@ if [[ "${ENABLE_DIFF}" == "true" && -f "${INPUT_PROFILE}" && -f "${OUTPUT_PROFIL
         echo "=== Vltimate CV Scraper Diff Report: $(date -u +'%Y-%m-%dT%H:%M:%SZ') ==="
         diff -u "${INPUT_PROFILE}" "${OUTPUT_PROFILE}" || true
     } > "${DIFF_LOG_FILE}"
-    log_info "Diff report saved to '${DIFF_LOG_FILE}'"
+    log_info "Diff report saved to './harvest_diff.log'"
 fi
 
 # ------------------------------------------------------------------------------
@@ -593,10 +678,8 @@ if [[ "${PACK_CHOICE}" =~ ^[Yy](es)?$ ]]; then
         log_info "Using encryption password from environment variable."
         ENCRYPT_PASS1="${ENCRYPT_PASS}"
     else
-        read -r -s -p "🔑 Enter custom encryption password: " ENCRYPT_PASS1 || ENCRYPT_PASS1=""
-        echo ""
-        read -r -s -p "🔑 Re-enter encryption password: " ENCRYPT_PASS2 || ENCRYPT_PASS2=""
-        echo ""
+        ENCRYPT_PASS1="$(read_secret "🔑 Enter custom encryption password: ")"
+        ENCRYPT_PASS2="$(read_secret "🔑 Re-enter encryption password: ")"
 
         if [[ "${ENCRYPT_PASS1}" != "${ENCRYPT_PASS2}" || -z "${ENCRYPT_PASS1}" ]]; then
             log_err "Invalid password or mismatch! Aborting encryption."
@@ -604,7 +687,7 @@ if [[ "${PACK_CHOICE}" =~ ^[Yy](es)?$ ]]; then
         fi
     fi
 
-    log_info "Packing './input/', './output/', './archives/', and './logs/'..."
+    log_info "Packing './input/', './output/', and './archives/'..."
     tar -czf "${PLAIN_ARCHIVE}" -C "${SCRIPT_DIR}" "input" "output" "archives"
 
     if [[ "${ENCRYPT_MODE}" == "gpg" ]]; then
@@ -619,7 +702,7 @@ if [[ "${PACK_CHOICE}" =~ ^[Yy](es)?$ ]]; then
 
     # Auto-Push to Private Cloud Vault
     if [[ "${CLOUD_SYNC_ENABLED:-}" == "true" && -n "${GITHUB_USER:-}" && -n "${GITHUB_TOKEN:-}" ]]; then
-        log_info "Autonomously uploading encrypted archive to Private GitHub Cloud Vault..."
+        log_info "Uploading encrypted archive to Private GitHub Cloud Vault..."
         mkdir -p "${VAULT_DIR}"
         VAULT_URL="https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/${GITHUB_USER}/${VAULT_REPO}.git"
 
@@ -650,30 +733,28 @@ EOF
         rm -rf "${VAULT_DIR}"
         log_info "Synced to private GitHub repo: '${GITHUB_USER}/${VAULT_REPO}'"
     elif [[ "${CLOUD_SYNC_ENABLED:-}" == "true" && -z "${GITHUB_TOKEN:-}" ]]; then
-        log_warn "Skipped private cloud push because GitHub Personal Access Token (PAT) is not set."
-        log_warn "Run './harvest_cv.sh -c' or export GH_TOKEN=... to configure your token."
+        log_warn "Skipped private cloud push — no GitHub Token. Run './harvest_cv.sh -c' to configure."
     fi
 
-    log_info "Executing security cleanup: Removing unencrypted plain subdirectories..."
+    log_info "Security cleanup: Removing unencrypted plain subdirectories..."
     rm -rf "${INPUT_DIR}" "${OUTPUT_DIR}" "${ARCHIVE_DIR}"
     clear_checkpoint
 
     echo "======================================================================"
     log_info "Personal data successfully packed, encrypted, and cleaned!"
-    log_info "Encrypted Archive: '${ENCRYPTED_ARCHIVE}'"
+    log_info "Encrypted Archive: './personal_data.tar.gz.enc'"
     echo "----------------------------------------------------------------------"
-    log_info "📄 Persistent Local Unencrypted Preview available in './local_preview/':"
+    log_info "📄 Local preview available in './local_preview/':"
     log_info "   - Technical Profile: './local_preview/raw_technical_profile.md'"
     log_info "   - Interactive HTML:  './local_preview/cv.html'"
     log_info "   - English PDF:       './local_preview/cv_en.pdf'"
     log_info "   - Polish PDF:        './local_preview/cv_pl.pdf'"
-    log_info "   (Protected by .gitignore - Never uploaded to any remote repository)"
     echo "======================================================================"
 else
-    log_warn "User selected unencrypted mode. Plain assets remain available in '${SCRIPT_DIR}'."
+    log_warn "User selected unencrypted mode. Plain assets remain available in './'."
     clear_checkpoint
 fi
 
 echo "======================================================================"
-log_info "Vltimate CV Scraper v3.2 workflow complete!"
+log_info "Vltimate CV Scraper v3.3 workflow complete!"
 echo "======================================================================"

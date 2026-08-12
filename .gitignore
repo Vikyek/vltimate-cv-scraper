@@ -1,13 +1,13 @@
-# Ignore Development & Beta Sandbox Subdirectory
+# Development & Beta Sandbox
 devel/
 
-# Ignore Project-Specific Local Agent Rules
+# Project-Specific Local Agent Rules
 .agents/
 
-# Ignore Persistent Local Unencrypted Preview Subdirectory (Never Uploaded/Synced)
+# Persistent Local Unencrypted Preview (Never Uploaded)
 local_preview/
 
-# Ignore Personal Data Subdirectories & Generated Assets
+# Personal Data Subdirectories & Generated Assets
 input/
 output/
 archives/
@@ -19,19 +19,29 @@ cv_en.pdf
 cv_pl.pdf
 .vault_tmp/
 
-# Local Credentials & Secret Configuration Files
+# Actual Config Files (contain secrets — templates are tracked)
+config/vltimate_config.env
+config/pdf_customization.json
+config/conflict_audit.json
+config/checkpoint.json
+
+# Whitelist: config templates ARE tracked
+!config/config.template.env
+!config/pdf_customization.template.json
+
+# Legacy config locations (in case of leftover files)
 .vltimate_config*
 .pdf_customization.json
 .conflict_audit.json
 .checkpoint.json
-*.env
-*.env.local
 .credentials
 
-# Personal Data Encrypted & Packed Archives (Tracked only in Private Vault Repo)
+# Encrypted Archives (Tracked only in Private Vault Repo)
 personal_data*.tar.gz
 snapshot_*.tar.gz
 *.tmp
 *.log
+logs/
 .DS_Store
 *.swp
+
