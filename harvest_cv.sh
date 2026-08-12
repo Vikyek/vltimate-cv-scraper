@@ -200,11 +200,11 @@ check_and_prompt_emoji_font() {
                 # Spawn fresh terminal with the same script & args, then exit
                 local relaunch_cmd="cd '${SCRIPT_DIR}' && '${SCRIPT_DIR}/harvest_cv.sh' ${ORIG_ARGS[*]:-}; exec bash"
                 if [[ -n "${TERMINAL:-}" ]]; then
-                    "${TERMINAL}" -e bash -c "${relaunch_cmd}" &
+                    "${TERMINAL}" -e bash -c "${relaunch_cmd}" 2>/dev/null &
                 elif command -v i3-sensible-terminal &>/dev/null; then
-                    i3-sensible-terminal -e bash -c "${relaunch_cmd}" &
+                    i3-sensible-terminal -e bash -c "${relaunch_cmd}" 2>/dev/null &
                 elif command -v kitty &>/dev/null; then
-                    kitty bash -c "${relaunch_cmd}" &
+                    kitty bash -c "${relaunch_cmd}" 2>/dev/null &
                 else
                     echo -e "${C_GOLD}▲ Could not detect terminal emulator. Please reopen terminal manually.${C_RESET}"
                     USE_SIMPLE_GLYPHS="true"
