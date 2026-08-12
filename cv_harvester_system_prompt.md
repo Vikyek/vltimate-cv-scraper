@@ -81,9 +81,16 @@ tail -n 300 ~/.zsh_history 2>/dev/null | tail -n 100 || true
 # 5. Systemd Journal & Package Manager Log Mining
 journalctl --since "30 days ago" 2>/dev/null | grep -iE "paru|pacman|bcachefs|cachyos|nouveau|mtk|android" | tail -n 100 || true
 tail -n 200 /var/log/pacman.log 2>/dev/null | tail -n 100 || true
+
+# 6. Cloud Services & Storage CLI Inspection
+gcloud config list 2>/dev/null || true
+gcloud projects list 2>/dev/null || true
+az account show 2>/dev/null || true
+aws configure list 2>/dev/null || true
+ls -la ~/.config/rclone/ 2>/dev/null || true
 ```
 
-### Step 2: GitHub Profile, Special Repository & Linked Cross-Site Scraping
+### Step 2: GitHub, Developer Registries & Linked Cross-Site Scraping
 Execute profile, README, and linked cross-platform intelligence discovery:
 ```bash
 # 1. Fetch GitHub User Profile Metadata (Bio, Location, Blog/Site Links, Social Accounts, Stats)
@@ -96,7 +103,12 @@ curl -s https://raw.githubusercontent.com/<USERNAME>/<USERNAME>/main/README.md 2
 # 3. Fetch Candidate's Public Repositories (Names, Descriptions, Topics, Stacks, Stars, Forks)
 curl -s "https://api.github.com/users/<USERNAME>/repos?per_page=100"
 
-# 4. Extract Linked Profiles & Sites (Personal Webpage, LinkedIn, Twitter/X, Medium, DEV.to, Hashnode, GitLab, Codeberg, Docker Hub, StackOverflow, Kaggle, npm, PyPI)
+# 4. Public Developer Registries & Container Repositories (Default Starting Points)
+curl -s "https://hub.docker.com/v2/repositories/${USERNAME}/" 2>/dev/null || true
+curl -s "https://registry.npmjs.org/-/v1/search?text=author:${USERNAME}" 2>/dev/null || true
+curl -s "https://pypi.org/pypi?%3Aaction=search&term=${USERNAME}" 2>/dev/null || true
+
+# 5. Extract Linked Profiles & External Sites (Personal Webpage, LinkedIn, Twitter/X, Medium, DEV.to, Hashnode, GitLab, Codeberg, StackOverflow, Kaggle)
 # Follow linked URLs recursively to scrape candidate-authored technical content, project writeups, certifications, and skills.
 ```
 - **Attribution & Scope Boundary**: Scrape candidate-authored data, project writeups, bio details, stats, badges, and skills across all linked sites. Ignore third-party noise, unrelated comments, or external non-candidate content.

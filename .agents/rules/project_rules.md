@@ -47,3 +47,7 @@
 ## 11. GitHub Profile & Recursive Cross-Site Link Scraping
 - **Profile & README Scraping**: Harvest candidate's GitHub user bio, location, social links, badges, stats, and special profile repository README (`<USERNAME>/<USERNAME>`).
 - **Recursive Linked Profile Discovery**: Extract linked external profiles (personal site, LinkedIn, Medium, DEV.to, Hashnode, GitLab, Codeberg, Docker Hub, StackOverflow, Kaggle, npm, PyPI) and recursively scrape candidate-authored technical skills, projects, certifications, and experience while ignoring third-party noise.
+
+## 12. Default Starting Point Sites & Cloud Services Inspection
+- **Default Starting Web Endpoints**: GitHub Profile API (`users/<USER>`), Special Profile README (`<USER>/<USER>`), Repositories API (`users/<USER>/repos`), Docker Hub API (`hub.docker.com`), npm Registry (`registry.npmjs.org`), and PyPI (`pypi.org`).
+- **Local Cloud CLI Inspection**: GCP (`gcloud config list`, `gcloud projects list`), Azure (`az account show`), AWS (`aws configure list`), and `~/.config/rclone/` (remote cloud storage profiles).
