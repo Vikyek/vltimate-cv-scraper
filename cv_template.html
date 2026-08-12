@@ -448,8 +448,14 @@
 
   <script>
     const RODO_DATABASE = {
-      universal: `Wyrażam zgodę na przetwarzanie moich danych osobowych dla potrzeb niezbędnych do realizacji procesu rekrutacji (zgodnie z ustawą z dnia 10 maja 2018 roku o ochronie danych osobowych (Dz. Ustaw z 2018, poz. 1000) oraz zgodnie z Rozporządzeniem Parlamentu Europejskiego i Rady (UE) 2016/679 z dnia 27 kwietnia 2016 r. w sprawie ochrony osób fizycznych w związku z przetwarzaniem danych osobowych i w sprawie swobodnego przepływu takich danych oraz uchylenia dyrektywy 95/46/WE (RODO).`,
-      none: ``
+      en: {
+        universal: `I hereby give consent for my personal data to be processed for the purpose of conducting recruitment procedures (in accordance with Regulation (EU) 2016/679 of the European Parliament and of the Council of 27 April 2016 on the protection of natural persons with regard to the processing of personal data - GDPR).`,
+        none: ``
+      },
+      pl: {
+        universal: `Wyrażam zgodę na przetwarzanie moich danych osobowych dla potrzeb niezbędnych do realizacji procesu rekrutacji (zgodnie z ustawą z dnia 10 maja 2018 roku o ochronie danych osobowych (Dz. Ustaw z 2018, poz. 1000) oraz zgodnie z Rozporządzeniem Parlamentu Europejskiego i Rady (UE) 2016/679 z dnia 27 kwietnia 2016 r. w sprawie ochrony osób fizycznych w związku z przetwarzaniem danych osobowych i w sprawie swobodnego przepływu takich danych oraz uchylenia dyrektywy 95/46/WE (RODO)).`,
+        none: ``
+      }
     };
 
     let currentLanguage = 'en';
@@ -532,15 +538,25 @@
 
     function refreshRodoClause() {
       const activeSelection = document.getElementById('rodo-config') ? document.getElementById('rodo-config').value : 'universal';
-      const textToInject = RODO_DATABASE[activeSelection] || RODO_DATABASE['universal'];
-      const contentsNodes = document.querySelectorAll('.rodo-content-node');
+      const enNode = document.querySelector('#cv-english-page .rodo-content-node');
+      const plNode = document.querySelector('#cv-polish-page .rodo-content-node');
       const outerBoxes = document.querySelectorAll('.rodo-outer-box');
 
-      contentsNodes.forEach(node => { node.textContent = textToInject; });
+      if (enNode) {
+        enNode.textContent = (RODO_DATABASE.en && RDO_DATABASE_SEL(RODO_DATABASE.en, activeSelection)) || RODO_DATABASE.en.universal;
+      }
+      if (plNode) {
+        plNode.textContent = (RODO_DATABASE.pl && RDO_DATABASE_SEL(RODO_DATABASE.pl, activeSelection)) || RODO_DATABASE.pl.universal;
+      }
+
       outerBoxes.forEach(box => {
         if (activeSelection === 'none') { box.classList.add('hidden'); }
         else { box.classList.remove('hidden'); }
       });
+    }
+
+    function RDO_DATABASE_SEL(obj, key) {
+      return (obj[key] !== undefined) ? obj[key] : obj['universal'];
     }
 
     function exportCustomizationConfig() {

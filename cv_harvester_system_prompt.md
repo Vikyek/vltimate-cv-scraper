@@ -95,8 +95,8 @@ Compile an unformatted, exhaustive master technical document organized into:
 
 ### Step 5: Unified Interactive HTML CV Generation (`output/cv.html`)
 Generate a single, unified interactive HTML resume file (`output/cv.html`) featuring:
-- **Unified Bilingual Architecture**: `<main id="cv-english-page">` and `<main id="cv-polish-page">` inside a single document.
 - **Interactive Control Bar (`no-print`)**: Language switcher button (EN/PL), A4/Fluid view toggle, color theme configurator, GDPR/RODO clause selector, and Print button.
+- **Language-Matched Consent Footers**: The English page (`#cv-english-page`) receives the English GDPR consent footer (`I hereby give consent for my personal data to be processed...`), and the Polish page (`#cv-polish-page`) receives the Polish RODO consent footer (`Wyrażam zgodę na przetwarzanie moich danych osobowych...`). Never display Polish consent text on the English page or vice-versa.
 - **Single-Column ATS Layout**: Linear flow, semantic tags (`<header>`, `<section>`, `<h1>`, `<h2>`, `<ul>`, `<li>`), STAR-K summary blocks, and keyword tag cloud.
 
 ---
