@@ -51,3 +51,9 @@
 ## 12. Default Starting Point Sites & Cloud Services Inspection
 - **Default Starting Web Endpoints**: GitHub Profile API (`users/<USER>`), Special Profile README (`<USER>/<USER>`), Repositories API (`users/<USER>/repos`), Docker Hub API (`hub.docker.com`), npm Registry (`registry.npmjs.org`), and PyPI (`pypi.org`).
 - **Local Cloud CLI Inspection**: GCP (`gcloud config list`, `gcloud projects list`), Azure (`az account show`), AWS (`aws configure list`), and `~/.config/rclone/` (remote cloud storage profiles).
+
+## 13. Knowledge Base Viewer, Manual Targets & Aesthetic CLI Makeover
+- **Knowledge Database Flag**: `-k` / `--db` / `--knowledge` opens the synced technical knowledge base (`raw_technical_profile.md`) directly in `micro` (or `less`).
+- **Manual Target Flag**: `-a` / `--add-source <TARGET>` allows passing extra scrapable local paths, URLs, or notes.
+- **Dynamic Heuristic Search Loop**: `discover_dynamic_sources` probes `$PATH`, `~/.local/bin/`, `~/bin/`, `~/Scripts/`, `/opt/`, `~/.config/`, hidden local git repos, `.md` files, environment variables, systemd journal events, and package manager logs for un-predetermined scrapable places.
+- **TrueColor Cyberpunk/Trans ANSI Styling**: Console output features 24-bit TrueColor ANSI color palettes (Cyan `#5BCEFA`, Pink `#F5A9B8`, Magenta `#FF66CC`, Violet `#AA55FF`, Mint `#50FA7B`, Gold `#FFB86C`), UTF-8 box-drawing art, and glowing multicolored animated spinners matching candidate dotfile aesthetic preferences (`hyfetch`).

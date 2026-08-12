@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Vltimate CV Scraper v3.3 (Production Master)
+# Vltimate CV Scraper v3.4 (Production Master)
 # Usage: ./harvest_cv.sh [OPTIONS]
-# Changes in v3.3:
+# Changes in v3.4:
+#   - Aesthetic Makeover: Cyberpunk/Trans 24-bit TrueColor ANSI styling & box art
+#   - Knowledge Base Viewer: --db / -k / --knowledge flag to view database
+#   - Manual Target Addition: -a / --add-source <TARGET> flag for extra scrapable places
+#   - Dynamic Heuristic Discovery: Automatic search for un-predetermined scrapable artifacts
 #   - Configs moved to './config/' subdir with tracked default templates
-#   - Masked secret input (shows * characters)
-#   - Crash-resilient run_with_spinner (handles agy timeouts gracefully)
-#   - HTML GUI auto-opens correctly (fixed undefined TEMPLATE_FILE)
-#   - Removed "(gitignored)" from output messages
-#   - Intelligence source reporting during harvest
+#   - Masked secret input (shows * characters with tput stderr redirection)
+#   - Crash-resilient run_with_spinner & exit trap secret cleanup
 # ==============================================================================
 
 set -euo pipefail
@@ -37,10 +38,26 @@ OUTPUT_CV_HTML="${OUTPUT_DIR}/cv.html"
 ENCRYPTED_ARCHIVE="${SCRIPT_DIR}/personal_data.tar.gz.enc"
 PLAIN_ARCHIVE="${SCRIPT_DIR}/personal_data.tar.gz"
 
+# ------------------------------------------------------------------------------
+# TRUECOLOR ANSI STYLING PALETTE (Cyberpunk / Trans HSL)
+# ------------------------------------------------------------------------------
+C_RESET='\033[0m'
+C_BOLD='\033[1m'
+C_DIM='\033[2m'
+C_CYAN='\033[38;2;91;206;250m'    # Trans Cyan #5BCEFA
+C_PINK='\033[38;2;245;169;184m'   # Trans Pink #F5A9B8
+C_WHITE='\033[38;2;255;255;255m'  # Pure White #FFFFFF
+C_MAGENTA='\033[38;2;255;102;204m' # Neon Magenta #FF66CC
+C_VIOLET='\033[38;2;170;85;255m'  # Neon Violet #AA55FF
+C_GREEN='\033[38;2;80;250;123m'   # Mint Green #50FA7B
+C_GOLD='\033[38;2;255;184;108m'   # Warm Gold #FFB86C
+C_RED='\033[38;2;255;85;85m'      # Bright Red #FF5555
+
 cleanup_secrets() {
     unset GITHUB_TOKEN DECRYPT_PASS ENCRYPT_PASS ENCRYPT_PASS1 ENCRYPT_PASS2 GH_TOKEN VAULT_PAT 2>/dev/null || true
 }
 trap cleanup_secrets EXIT INT TERM
+
 ENCRYPT_PASS2=""
 GITHUB_USER="${GITHUB_USER:-Vikyek}"
 GITHUB_TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
@@ -63,12 +80,21 @@ ENCRYPT_MODE="aes"
 OPEN_GUI="false"
 RECONFIG="false"
 ONLY_VIEW="false"
+VIEW_DB="false"
+MANUAL_SOURCES=()
 
 # ------------------------------------------------------------------------------
-# LOGGING ENGINE & CLEAN CONSOLE OUTPUT (WITH LOG SECRET REDACTION)
+# LOGGING ENGINE & AESTHETIC CONSOLE OUTPUT (LOG SECRET REDACTION)
 # ------------------------------------------------------------------------------
 mkdir -p "${LOG_DIR}" "${CONFIG_DIR}"
 LOG_FILE="${LOG_DIR}/harvest_$(date +'%Y-%m-%d_%H%M%S').log"
+
+print_banner() {
+    echo -e "${C_CYAN}┌────────────────────────────────────────────────────────────────────────┐${C_RESET}"
+    echo -e "${C_CYAN}│  ${C_BOLD}${C_MAGENTA}🌌 VLTIMATE CV SCRAPER v3.4${C_RESET}${C_CYAN} — Technical Intelligence & ATS Engine │${C_RESET}"
+    echo -e "${C_CYAN}│  ${C_PINK}Autonomous Scraping • Multi-Shell Mining • Cross-Site Discovery${C_RESET}${C_CYAN}      │${C_RESET}"
+    echo -e "${C_CYAN}└────────────────────────────────────────────────────────────────────────┘${C_RESET}"
+}
 
 sanitize_log_msg() {
     local msg="$*"
@@ -81,9 +107,9 @@ log_info() {
     local clean_msg="$(sanitize_log_msg "$*")"
     echo "[${timestamp}] ℹ️  ${clean_msg}" >> "${LOG_FILE}"
     if [[ "${VERBOSE}" == "true" ]]; then
-        echo "[${timestamp}] ℹ️  ${clean_msg}"
+        echo -e "${C_DIM}[${timestamp}]${C_RESET} ${C_CYAN}ℹ️  ${clean_msg}${C_RESET}"
     else
-        echo "ℹ️  ${clean_msg}"
+        echo -e "${C_CYAN}ℹ️  ${clean_msg}${C_RESET}"
     fi
 }
 
@@ -92,9 +118,9 @@ log_warn() {
     local clean_msg="$(sanitize_log_msg "$*")"
     echo "[${timestamp}] ⚠️  ${clean_msg}" >> "${LOG_FILE}"
     if [[ "${VERBOSE}" == "true" ]]; then
-        echo "[${timestamp}] ⚠️  ${clean_msg}"
+        echo -e "${C_DIM}[${timestamp}]${C_RESET} ${C_GOLD}⚠️  ${clean_msg}${C_RESET}"
     else
-        echo "⚠️  ${clean_msg}"
+        echo -e "${C_GOLD}⚠️  ${clean_msg}${C_RESET}"
     fi
 }
 
@@ -103,9 +129,9 @@ log_err() {
     local clean_msg="$(sanitize_log_msg "$*")"
     echo "[${timestamp}] ❌ ${clean_msg}" >> "${LOG_FILE}"
     if [[ "${VERBOSE}" == "true" ]]; then
-        echo "[${timestamp}] ❌ ${clean_msg}"
+        echo -e "${C_DIM}[${timestamp}]${C_RESET} ${C_RED}❌ ${clean_msg}${C_RESET}"
     else
-        echo "❌ ${clean_msg}"
+        echo -e "${C_RED}❌ ${clean_msg}${C_RESET}"
     fi
 }
 
@@ -121,7 +147,7 @@ EOF
     local timestamp="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
     echo "[${timestamp}] ℹ️  Checkpoint saved: '${state}'" >> "${LOG_FILE}"
     if [[ "${VERBOSE}" == "true" ]]; then
-        echo "[${timestamp}] ℹ️  Checkpoint saved: '${state}'"
+        echo -e "${C_DIM}[${timestamp}]${C_RESET} ${C_VIOLET}◈ Checkpoint saved: '${state}'${C_RESET}"
     fi
 }
 
@@ -130,7 +156,7 @@ clear_checkpoint() {
     local timestamp="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
     echo "[${timestamp}] ℹ️  Checkpoint cleared." >> "${LOG_FILE}"
     if [[ "${VERBOSE}" == "true" ]]; then
-        echo "[${timestamp}] ℹ️  Checkpoint cleared."
+        echo -e "${C_DIM}[${timestamp}]${C_RESET} ${C_VIOLET}◈ Checkpoint cleared.${C_RESET}"
     fi
 }
 
@@ -143,7 +169,7 @@ read_secret() {
     local char=""
     
     tput civis >&2 2>/dev/null || true
-    printf "%s" "$prompt" >&2
+    printf "%b" "${C_MAGENTA}${prompt}${C_RESET}" >&2
     
     while IFS= read -r -s -n1 char; do
         if [[ -z "$char" ]]; then
@@ -155,7 +181,7 @@ read_secret() {
             fi
         else
             input+="$char"
-            printf "*" >&2
+            printf "${C_PINK}*${C_RESET}" >&2
         fi
     done
     
@@ -165,18 +191,20 @@ read_secret() {
 }
 
 # ------------------------------------------------------------------------------
-# ANIMATED CLI SPINNER (crash-resilient)
+# ANIMATED MULTICOLOR CLI SPINNER (crash-resilient)
 # ------------------------------------------------------------------------------
 show_spinner() {
     local pid=$1
     local msg="$2"
     local spin=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+    local colors=("${C_CYAN}" "${C_PINK}" "${C_WHITE}" "${C_MAGENTA}" "${C_VIOLET}")
     local i=0
     
     tput civis 2>/dev/null || true
     
     while kill -0 "$pid" 2>/dev/null; do
-        printf "\r\e[K \e[36m%s\e[0m \e[1m%s\e[0m" "${spin[$i]}" "${msg}" >&2
+        local c="${colors[$((i % ${#colors[@]}))]}"
+        printf "\r\e[K ${c}%s\e[0m \e[1m%s\e[0m" "${spin[$i]}" "${msg}" >&2
         i=$(( (i + 1) % ${#spin[@]} ))
         sleep 0.1
     done
@@ -193,11 +221,11 @@ run_with_spinner() {
     local exit_code=0
     wait "$pid" || exit_code=$?
     if [[ $exit_code -ne 0 ]]; then
-        printf "\r\e[K \e[31m✘\e[0m \e[1m%s\e[0m (Failed — see log)\n" "${msg}" >&2
+        printf "\r\e[K ${C_RED}✘${C_RESET} \e[1m%s\e[0m ${C_PINK}(Failed — see log)${C_RESET}\n" "${msg}" >&2
         log_err "${msg} failed with exit code ${exit_code}. Check '${LOG_FILE}' for details."
         return $exit_code
     else
-        printf "\r\e[K \e[32m✔\e[0m \e[1m%s\e[0m (Completed)\n" "${msg}" >&2
+        printf "\r\e[K ${C_GREEN}✔${C_RESET} \e[1m%s\e[0m ${C_CYAN}(Completed)${C_RESET}\n" "${msg}" >&2
     fi
 }
 
@@ -205,24 +233,22 @@ run_with_spinner() {
 # CLI ARGUMENT PARSER
 # ------------------------------------------------------------------------------
 show_help() {
-    cat <<EOF
-Vltimate CV Scraper v3.3 - Technical Intelligence Harvester & ATS Engine
-
-USAGE:
-  ./harvest_cv.sh [OPTIONS]
-
-OPTIONS:
-  -h, --help                Show help documentation
-  -v, --verbose             Print ISO timestamps in live console output
-  --view                    Open local preview HTML resume in Google Chrome
-  -t, --tailor <FILE|URL>   Tailor summary, keywords, & bullet points to a Job Description
-  -p, --pdf                 Force automated headless PDF export
-  -d, --diff                Generate visual experience diff log
-  -i, --interactive         Enable interactive prompt edit & conflict resolution loop
-  -e, --encrypt-mode <TYPE> Set encryption backend: 'aes' (default) or 'gpg'
-  --gui                     Open customization GUI in Google Chrome
-  -c, --config              Reconfigure GitHub token & private cloud sync options
-EOF
+    print_banner
+    echo -e "\n${C_BOLD}USAGE:${C_RESET}"
+    echo -e "  ./harvest_cv.sh [OPTIONS]\n"
+    echo -e "${C_BOLD}OPTIONS:${C_RESET}"
+    echo -e "  ${C_CYAN}-h, --help${C_RESET}                 Show help documentation"
+    echo -e "  ${C_CYAN}-v, --verbose${C_RESET}              Print ISO timestamps & detailed trace in console"
+    echo -e "  ${C_CYAN}-k, --db, --knowledge${C_RESET}      View the synced technical knowledge database in terminal"
+    echo -e "  ${C_CYAN}-a, --add-source <TARGET>${C_RESET} Point to an additional scrapable path, URL, or note"
+    echo -e "  ${C_CYAN}--view${C_RESET}                     Open local preview HTML resume in Google Chrome"
+    echo -e "  ${C_CYAN}-t, --tailor <FILE|URL>${C_RESET}    Tailor summary, keywords, & bullet points to a Job Description"
+    echo -e "  ${C_CYAN}-p, --pdf${C_RESET}                  Force automated headless PDF export"
+    echo -e "  ${C_CYAN}-d, --diff${C_RESET}                 Generate visual experience diff log"
+    echo -e "  ${C_CYAN}-i, --interactive${C_RESET}          Enable interactive prompt edit & conflict resolution loop"
+    echo -e "  ${C_CYAN}-e, --encrypt-mode <TYPE>${C_RESET}  Set encryption backend: 'aes' (default) or 'gpg'"
+    echo -e "  ${C_CYAN}--gui${C_RESET}                      Open customization GUI in Google Chrome"
+    echo -e "  ${C_CYAN}-c, --config${C_RESET}               Reconfigure GitHub token & private cloud sync options"
     exit 0
 }
 
@@ -230,6 +256,8 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         -h|--help) show_help ;;
         -v|--verbose) VERBOSE="true"; shift ;;
+        -k|--db|--knowledge) VIEW_DB="true"; shift ;;
+        -a|--add-source) MANUAL_SOURCES+=("$2"); shift 2 ;;
         --view) ONLY_VIEW="true"; shift ;;
         -t|--tailor) TAILOR_TARGET="$2"; shift 2 ;;
         -p|--pdf) FORCE_PDF="true"; shift ;;
@@ -242,6 +270,30 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# View Knowledge Base Mode (--db / -k)
+if [[ "${VIEW_DB}" == "true" ]]; then
+    DB_TARGET=""
+    if [[ -f "${OUTPUT_PROFILE}" ]]; then
+        DB_TARGET="${OUTPUT_PROFILE}"
+    elif [[ -f "${INPUT_PROFILE}" ]]; then
+        DB_TARGET="${INPUT_PROFILE}"
+    elif [[ -f "${LOCAL_PREVIEW_DIR}/raw_technical_profile.md" ]]; then
+        DB_TARGET="${LOCAL_PREVIEW_DIR}/raw_technical_profile.md"
+    fi
+
+    if [[ -n "${DB_TARGET}" ]]; then
+        echo -e "${C_CYAN}📖 Opening synced technical knowledge base: '${DB_TARGET}'...${C_RESET}"
+        if command -v micro &>/dev/null; then
+            micro "${DB_TARGET}"
+        else
+            less -R "${DB_TARGET}"
+        fi
+    else
+        log_err "No synced knowledge database found. Run ./harvest_cv.sh to generate it."
+    fi
+    exit 0
+fi
+
 if [[ "${ONLY_VIEW}" == "true" ]]; then
     if [[ -f "${LOCAL_PREVIEW_DIR}/cv.html" ]]; then
         log_info "Opening local preview HTML resume in Google Chrome..."
@@ -252,10 +304,10 @@ if [[ "${ONLY_VIEW}" == "true" ]]; then
     exit 0
 fi
 
-echo "======================================================================"
-log_info "Starting Vltimate CV Scraper v3.3"
+print_banner
+log_info "Starting Vltimate CV Scraper v3.4"
 log_info "Execution Log File: '${LOG_FILE}'"
-echo "======================================================================"
+echo -e "${C_CYAN}────────────────────────────────────────────────────────────────────────${C_RESET}"
 
 # ------------------------------------------------------------------------------
 # MIGRATE LEGACY CONFIG FILES TO './config/' SUBDIR
@@ -323,6 +375,48 @@ check_dependencies
 mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}" "${ARCHIVE_DIR}" "${LOCAL_PREVIEW_DIR}"
 
 rm -f "${SCRIPT_DIR}/cv_en.html" "${SCRIPT_DIR}/cv_pl.html" "${SCRIPT_DIR}/cv_en.pdf" "${SCRIPT_DIR}/cv_pl.pdf" "${SCRIPT_DIR}/raw_technical_profile.md"
+
+# ------------------------------------------------------------------------------
+# DYNAMIC HEURISTIC UN-PREDETERMINED DISCOVERY ENGINE
+# ------------------------------------------------------------------------------
+discover_dynamic_sources() {
+    log_info "Executing dynamic heuristic search for un-predetermined scrapable places..."
+    local DYNAMIC_FOUND=()
+    
+    # 1. Custom User Binaries & Script Directories
+    for d in "${HOME}/.local/bin" "${HOME}/bin" "${HOME}/Scripts" "/opt"; do
+        if [[ -d "$d" ]]; then
+            DYNAMIC_FOUND+=("Local script directory: '$d'")
+        fi
+    done
+    
+    # 2. Local Git Repositories across Home Directory
+    local REPO_COUNT=0
+    while IFS= read -r gitdir; do
+        if [[ -n "$gitdir" ]]; then
+            local repo_path="$(dirname "$gitdir")"
+            DYNAMIC_FOUND+=("Local Git repository: '${repo_path}'")
+            REPO_COUNT=$((REPO_COUNT + 1))
+            if [[ $REPO_COUNT -ge 15 ]]; then break; fi
+        fi
+    done < <(find "${HOME}" -maxdepth 3 -name ".git" 2>/dev/null || true)
+    
+    # 3. Environment Variables ($PATH, custom exports)
+    DYNAMIC_FOUND+=("Active shell environment variables (\$PATH)")
+
+    # 4. Manually Specified Targets via -a / --add-source
+    if [[ ${#MANUAL_SOURCES[@]} -gt 0 ]]; then
+        for s in "${MANUAL_SOURCES[@]}"; do
+            DYNAMIC_FOUND+=("Manually specified target: '${s}'")
+        done
+    fi
+
+    for src in "${DYNAMIC_FOUND[@]}"; do
+        log_info "Dynamic source identified [NEW]: ${src}"
+    done
+}
+
+discover_dynamic_sources
 
 # ------------------------------------------------------------------------------
 # STEP 1: Customization Memory & GUI Trigger Logic
@@ -515,8 +609,13 @@ if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" || "${RESUM
         PROMPT="${PROMPT} Tailor the summary, keyword badges, and experience bullet points specifically for Job Description: ${JD_CONTENT}."
     fi
 
+    if [[ ${#MANUAL_SOURCES[@]} -gt 0 ]]; then
+        PROMPT="${PROMPT} Additionally inspect these user-specified manual targets: ${MANUAL_SOURCES[*]}."
+    fi
+
     # Intelligence source reporting instructions
-    PROMPT="${PROMPT} Perform harvesting across system, shell history, git repos, and GitHub profile."
+    PROMPT="${PROMPT} Perform harvesting across system, shell history, git repos, cloud services (gcloud, az, aws, rclone), public registries (Docker Hub, npm, PyPI), and GitHub profile."
+    PROMPT="${PROMPT} Perform dynamic heuristic searching to evaluate un-predetermined scrapable places (custom scripts, config dirs, dotfile repos, journals)."
     PROMPT="${PROMPT} When scanning, report each new intelligence source found (e.g. 'Scanning local git repos...', 'Found GitHub repo: <name> [NEW]', 'Scanning shell history...', 'Found loose script: <path> [KNOWN]', 'Scanning online GitHub profile...', 'Found linked profile: <url> [NEW]'). Mark sources as [NEW] if not present in past collected intel, or [KNOWN] if already present."
     PROMPT="${PROMPT} Save updated knowledge base into '${OUTPUT_PROFILE}' and generate unified bilingual interactive HTML resume into '${OUTPUT_CV_HTML}'."
 
@@ -567,11 +666,11 @@ if [[ -f "${OUTPUT_PROFILE}" ]]; then
     fi
 
     if [[ "${HAS_CONFLICTS}" == "true" ]]; then
-        echo "======================================================================"
+        echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
         log_warn "⚠️ CONFLICT DETECTED IN HARVESTED TECHNICAL DATA!"
-        echo "======================================================================"
+        echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
         cat "${AUDIT_FILE}"
-        echo "----------------------------------------------------------------------"
+        echo -e "${C_CYAN}────────────────────────────────────────────────────────────────────────${C_RESET}"
         log_warn "Conflict resolution is REQUIRED before proceeding to PDF generation!"
         
         while [[ "${HAS_CONFLICTS}" == "true" ]]; do
@@ -589,9 +688,9 @@ if [[ -f "${OUTPUT_PROFILE}" ]]; then
             fi
         done
     else
-        echo "======================================================================"
+        echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
         log_info "✅ Technical Data Audit Passed: Zero data conflicts or date contradictions detected."
-        echo "======================================================================"
+        echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
     fi
 else
     log_warn "No output profile found. Skipping conflict audit."
@@ -603,9 +702,9 @@ fi
 if [[ "${INTERACTIVE_LOOP}" == "true" ]]; then
     while true; do
         echo ""
-        echo "======================================================================"
-        echo "✍️ Interactive Refinement Menu (via agy)"
-        echo "======================================================================"
+        echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
+        echo -e "${C_BOLD}${C_MAGENTA}✍️ Interactive Refinement Menu (via agy)${C_RESET}"
+        echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
         echo "Current harvested profile and HTML resume are ready in './output/'."
         echo "  1) Approve current CV & Profile (Proceed to PDF Export & Encryption)"
         echo "  2) Prompt agy to revise / edit specific section"
@@ -750,21 +849,21 @@ EOF
     rm -rf "${INPUT_DIR}" "${OUTPUT_DIR}" "${ARCHIVE_DIR}"
     clear_checkpoint
 
-    echo "======================================================================"
+    echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
     log_info "Personal data successfully packed, encrypted, and cleaned!"
     log_info "Encrypted Archive: './personal_data.tar.gz.enc'"
-    echo "----------------------------------------------------------------------"
+    echo -e "${C_CYAN}────────────────────────────────────────────────────────────────────────${C_RESET}"
     log_info "📄 Local preview available in './local_preview/':"
     log_info "   - Technical Profile: './local_preview/raw_technical_profile.md'"
     log_info "   - Interactive HTML:  './local_preview/cv.html'"
     log_info "   - English PDF:       './local_preview/cv_en.pdf'"
     log_info "   - Polish PDF:        './local_preview/cv_pl.pdf'"
-    echo "======================================================================"
+    echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
 else
     log_warn "User selected unencrypted mode. Plain assets remain available in './'."
     clear_checkpoint
 fi
 
-echo "======================================================================"
-log_info "Vltimate CV Scraper v3.3 workflow complete!"
-echo "======================================================================"
+echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
+log_info "Vltimate CV Scraper v3.4 workflow complete!"
+echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
