@@ -3,7 +3,8 @@
 # Automated CV Harvester, Resume Engine & Encryption Suite
 # Usage: ./harvest_cv.sh
 # Supports: Auto-detecting & decrypting existing archives, system harvesting via agy,
-#           and interactively packing & encrypting personal results with AES-256.
+#           and interactively packing & encrypting personal results with AES-256
+#           followed by a full security cleanup of unencrypted data.
 # ==============================================================================
 
 set -euo pipefail
@@ -78,7 +79,7 @@ echo "✅ Harvesting & CV Generation Phase Finished!"
 echo "======================================================================"
 
 # ------------------------------------------------------------------------------
-# STEP 3: Interactive Prompt for Packing & Encrypting Results
+# STEP 3: Interactive Prompt for Packing, Encryption & Security Cleanup
 # ------------------------------------------------------------------------------
 echo ""
 echo -n "❓ Do you want to pack and encrypt the personal results now? (y/N): "
@@ -102,25 +103,23 @@ if [[ "${PACK_CHOICE}" =~ ^[Yy](es)?$ ]]; then
         exit 1
     fi
 
-    echo "📦 Packing files into compressed archive..."
+    echo "📦 Packing all profile, resume, and output files into compressed archive..."
     tar -czf "${PLAIN_ARCHIVE}" -C "${SCRIPT_DIR}" "raw_technical_profile.md" "cv_en.html" "cv_pl.html" "output"
 
     echo "🔒 Encrypting archive with OpenSSL (AES-256-CBC with PBKDF2)..."
     openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -in "${PLAIN_ARCHIVE}" -out "${ENCRYPTED_ARCHIVE}" -pass pass:"${ENCRYPT_PASS1}"
     rm -f "${PLAIN_ARCHIVE}"
 
-    echo "✅ Personal data successfully packed and encrypted to:"
-    echo "👉 ${ENCRYPTED_ARCHIVE}"
+    echo "🧹 Executing security cleanup: Removing unencrypted plain text files..."
+    rm -rf "${RAW_PROFILE_FILE}" "${CV_EN_FILE}" "${CV_PL_FILE}" "${OUTPUT_DIR}"
 
-    echo ""
-    echo -n "❓ Remove unencrypted raw_technical_profile.md from local disk for privacy? (y/N): "
-    read -r WIPE_CHOICE
-    if [[ "${WIPE_CHOICE}" =~ ^[Yy](es)?$ ]]; then
-        rm -f "${RAW_PROFILE_FILE}"
-        echo "🧹 Unencrypted raw_technical_profile.md removed."
-    fi
+    echo "======================================================================"
+    echo "✅ Personal data successfully packed and encrypted!"
+    echo "👉 Encrypted Archive: ${ENCRYPTED_ARCHIVE}"
+    echo "🔒 All unencrypted plain text files have been securely removed."
+    echo "======================================================================"
 else
-    echo "ℹ️ Skipping encryption. Plain assets remain available in ${SCRIPT_DIR}."
+    echo "ℹ️ Skipping encryption. Plain assets remain available locally in ${SCRIPT_DIR}."
 fi
 
 echo "======================================================================"

@@ -1,17 +1,16 @@
-# Personal Data Encrypted & Packed Archives
-*.enc
-*.gpg
-*.tar.gz.enc
-*.zip.enc
-personal_data*.tar.gz*
-output/personal_data*
+# Ignore Personal Technical Profile & Generated Personal Resumes
+raw_technical_profile.md
+cv_en.html
+cv_pl.html
+output/
 
-# Temporary Files & Logs
-*.log
+# Personal Data Encrypted & Packed Archives (Tracked only if encrypted archive is produced)
+personal_data*.tar.gz
 *.tmp
+*.log
 .DS_Store
 *.swp
 
-# Local Environment Overrides
+# Environment variables & local secrets
 .env
 .env.local
