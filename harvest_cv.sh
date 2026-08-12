@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Vltimate CV Scraper v3.1 (Production Master)
+# Vltimate CV Scraper v3.2 (Production Master)
 # Usage: ./harvest_cv.sh [OPTIONS]
 # Features:
+#   - Clear notification when GitHub Token is missing for private vault creation
 #   - Persistent local unencrypted preview ('./local_preview/') for local viewing
 #   - Quoted relative path formatting ('./output/', './input/', './local_preview/')
 #   - Customization GUI re-use prompt ([y/N] default keep)
@@ -42,7 +43,7 @@ DECRYPT_PASS="${DECRYPT_PASS:-}"
 ENCRYPT_PASS="${ENCRYPT_PASS:-}"
 ENCRYPT_PASS1=""
 ENCRYPT_PASS2=""
-GITHUB_USER="${GITHUB_USER:-}"
+GITHUB_USER="${GITHUB_USER:-Vikyek}"
 GITHUB_TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
 SYNC_PROMPT=""
 INPUT_REPO=""
@@ -152,7 +153,7 @@ run_with_spinner() {
 # ------------------------------------------------------------------------------
 show_help() {
     cat <<EOF
-Vltimate CV Scraper v3.1 - Technical Intelligence Harvester & ATS Engine
+Vltimate CV Scraper v3.2 - Technical Intelligence Harvester & ATS Engine
 
 USAGE:
   ./harvest_cv.sh [OPTIONS]
@@ -199,7 +200,7 @@ if [[ "${ONLY_VIEW}" == "true" ]]; then
 fi
 
 echo "======================================================================"
-log_info "Starting Vltimate CV Scraper v3.1"
+log_info "Starting Vltimate CV Scraper v3.2"
 log_info "Execution Log File: '${LOG_FILE}'"
 echo "======================================================================"
 
@@ -290,26 +291,35 @@ EOF
 fi
 
 # ------------------------------------------------------------------------------
-# STEP 2: Persistent Configuration & Autonomous GitHub Repo Sync
+# STEP 2: Persistent Configuration & GitHub Token Verification
 # ------------------------------------------------------------------------------
 CLOUD_SYNC_ENABLED="false"
 VAULT_REPO="vltimate-cv-vault"
 PUBLIC_REPO="vltimate-cv-scraper"
 
-if [[ "${RECONFIG}" == "true" || ! -f "${CONFIG_FILE}" ]]; then
+if [[ -f "${CONFIG_FILE}" ]]; then
+    # shellcheck disable=SC1090
+    source "${CONFIG_FILE}"
+fi
+
+# Override with environment variable if present
+if [[ -n "${GH_TOKEN:-}" ]]; then GITHUB_TOKEN="${GH_TOKEN}"; fi
+
+if [[ "${RECONFIG}" == "true" || ! -f "${CONFIG_FILE}" || ( "${CLOUD_SYNC_ENABLED}" == "true" && -z "${GITHUB_TOKEN}" ) ]]; then
     echo ""
+    if [[ "${CLOUD_SYNC_ENABLED}" == "true" && -z "${GITHUB_TOKEN}" ]]; then
+        log_warn "Private Cloud Sync is enabled, but no GitHub Personal Access Token (PAT) is configured!"
+    fi
+    
     read -r -p "☁️ Enable Private GitHub Cloud Sync for encrypted vault database? [y/N]: " SYNC_PROMPT || SYNC_PROMPT="n"
     if [[ "${SYNC_PROMPT}" =~ ^[Yy](es)?$ ]]; then
         CLOUD_SYNC_ENABLED="true"
-        if [[ -n "${GITHUB_USER:-}" ]]; then
-            log_info "Detected GitHub Username from environment: '${GITHUB_USER}'"
-        else
-            read -r -p "👤 Enter your GitHub Username: " GITHUB_USER || GITHUB_USER=""
+        if [[ -z "${GITHUB_USER:-}" ]]; then
+            read -r -p "👤 Enter your GitHub Username [default: Vikyek]: " GITHUB_USER || GITHUB_USER="Vikyek"
+            GITHUB_USER="${GITHUB_USER:-Vikyek}"
         fi
 
-        if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-            log_info "Detected GitHub Personal Access Token from environment variable."
-        else
+        if [[ -z "${GITHUB_TOKEN:-}" ]]; then
             read -r -s -p "🔑 Enter your GitHub Personal Access Token (PAT): " GITHUB_TOKEN || GITHUB_TOKEN=""
             echo ""
         fi
@@ -327,9 +337,6 @@ EOF
         chmod 600 "${CONFIG_FILE}"
         log_info "Config saved to './.vltimate_config.env' (gitignored)."
     fi
-else
-    # shellcheck disable=SC1090
-    source "${CONFIG_FILE}"
 fi
 
 # Autonomous Syncing of Public Code Repository
@@ -359,7 +366,11 @@ if [[ "${CLOUD_SYNC_ENABLED:-}" == "true" && -n "${GITHUB_USER:-}" && -n "${GITH
             cp -f "${VAULT_DIR}/personal_data.tar.gz.enc" "${ENCRYPTED_ARCHIVE}"
             log_info "Latest encrypted cloud database downloaded."
         fi
+    else
+        log_info "Private vault repository '${GITHUB_USER}/${VAULT_REPO}' will be created on GitHub upon first encryption."
     fi
+elif [[ "${CLOUD_SYNC_ENABLED:-}" == "true" && -z "${GITHUB_TOKEN:-}" ]]; then
+    log_warn "Skipping Private Cloud Sync because GitHub Token is missing. Run './harvest_cv.sh -c' to configure token."
 fi
 
 # ------------------------------------------------------------------------------
@@ -622,6 +633,9 @@ EOF
         cd "${SCRIPT_DIR}"
         rm -rf "${VAULT_DIR}"
         log_info "Synced to private GitHub repo: '${GITHUB_USER}/${VAULT_REPO}'"
+    elif [[ "${CLOUD_SYNC_ENABLED:-}" == "true" && -z "${GITHUB_TOKEN:-}" ]]; then
+        log_warn "Skipped private cloud push because GitHub Personal Access Token (PAT) is not set."
+        log_warn "Run './harvest_cv.sh -c' or export GH_TOKEN=... to configure your token."
     fi
 
     log_info "Executing security cleanup: Removing unencrypted plain subdirectories..."
@@ -645,5 +659,5 @@ else
 fi
 
 echo "======================================================================"
-log_info "Vltimate CV Scraper v3.1 workflow complete!"
+log_info "Vltimate CV Scraper v3.2 workflow complete!"
 echo "======================================================================"
