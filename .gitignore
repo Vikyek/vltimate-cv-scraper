@@ -1,3 +1,6 @@
+# Ignore Development & Beta Sandbox Subdirectory
+devel/
+
 # Ignore Personal Data Subdirectories & Generated Assets
 input/
 output/

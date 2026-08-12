@@ -6,7 +6,10 @@ An automated, privacy-conscious resume architecture, technical intelligence harv
 
 ## 🌟 Key Features
 
-- **Unified Interactive Bilingual HTML (`output/cv.html`)**: Consolidates English and Polish pages into a single interactive document with on-the-fly language toggling, theme switching, and RODO clause injectors. Eliminates redundant separate HTML files.
+- **Unified Interactive Bilingual HTML (`output/cv.html`)**: Consolidates English and Polish pages into a single interactive document with on-the-fly language toggling, theme switching, and RODO clause injectors.
+- **Save & Export Customization**: Click "Save Config" in the HTML toolbar to export your visual themes, font density, language preferences, and RODO choices directly into `.pdf_customization.json`.
+- **AI Auto-Translation Engine**: Select or write-in any target language (e.g. Spanish, German, French, Italian, Japanese). Displays a clear translation warning banner and disables PDF export until `agy` completes the translation.
+- **Development Sandbox (`devel/`) & Safe Promotion**: Contains experimental beta features (Font density selector, typography switcher, ATS pre-flight scorecard, QR code generator). Isolated from main Git tracking via `.gitignore`. Features `devel/promote_devel.sh` for safe, single-command promotion to production.
 - **Subdirectory Tree & Snapshot Lifecycle**:
   - `input/`: Baseline technical profile data automatically rotated from previous runs to build upon.
   - `output/`: Freshly generated resume assets (`raw_technical_profile.md`, `cv.html`, `cv_en.pdf`, `cv_pl.pdf`).
@@ -26,11 +29,17 @@ An automated, privacy-conscious resume architecture, technical intelligence harv
 ```
 .
 ├── cv_harvester_system_prompt.md  # Master system prompt & enterprise ATS screening rules
-├── cv_template.html               # Clean, purged ModernCV layout container template
+├── cv_template.html               # Production ModernCV layout container template
 ├── harvest_cv.sh                  # Interactive CLI harvester & encryption runner script
 ├── man/man1/vltimate-cv-scraper.1 # UNIX man page documentation
 ├── README.md                      # Project documentation
 ├── .gitignore                     # Git exclusions for encrypted archives & private data
+│
+│--- DEVELOPMENT & BETA SANDBOX (Gitignored) ---
+├── devel/                         # Beta sandbox directory (Density, Fonts, ATS Scorecard, QR)
+│   ├── cv_template.html           # Experimental beta template
+│   ├── harvest_cv.sh              # Experimental runner
+│   └── promote_devel.sh           # Safe promotion script (promotes devel/ to master)
 │
 │--- DYNAMIC DATA SUBDIRECTORIES (Gitignored / Encrypted) ---
 ├── input/                         # Baseline technical data rotated from previous run
@@ -46,20 +55,16 @@ An automated, privacy-conscious resume architecture, technical intelligence harv
 
 ---
 
-## 🚀 CLI Usage & Options
+## 🚀 Development & Beta Promotion Workflow
 
-```text
-USAGE:
-  ./harvest_cv.sh [OPTIONS]
+To test experimental beta features (Font density, typography selector, ATS scorecard, QR code generator):
+```bash
+# 1. Edit or run beta scripts inside devel/
+cd devel/
+./harvest_cv.sh --pdf
 
-OPTIONS:
-  -h, --help                Show help documentation
-  -t, --tailor <FILE|URL>   Tailor summary, keywords, & bullet points to a Job Description
-  -p, --pdf                 Force automated headless PDF export (output/cv_en.pdf & cv_pl.pdf)
-  -d, --diff                Generate visual experience diff log (harvest_diff.log)
-  -e, --encrypt-mode <TYPE> Set encryption backend: 'aes' (OpenSSL AES-256) or 'gpg'
-  --gui                     Open customization GUI in Google Chrome to set themes/RODO options
-  -c, --config              Reconfigure GitHub token & private cloud sync options
+# 2. Safely promote tested beta features to PRODUCTION master
+./promote_devel.sh
 ```
 
 ---
@@ -73,4 +78,4 @@ man ./man/man1/vltimate-cv-scraper.1
 ---
 
 ## 🔐 Security & Privacy Note
-Sensitive data, personal contact details, subdirectories (`input/`, `output/`, `archives/`), credentials (`.vltimate_config.env`), and customization settings (`.pdf_customization.json`) are strictly excluded from git tracking via `.gitignore`.
+Sensitive data, personal contact details, subdirectories (`input/`, `output/`, `archives/`, `devel/`), credentials (`.vltimate_config.env`), and customization settings (`.pdf_customization.json`) are strictly excluded from git tracking via `.gitignore`.
