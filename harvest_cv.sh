@@ -1,16 +1,9 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Vltimate CV Scraper v2.2
+# Vltimate CV Scraper v2.5
 # Usage: ./harvest_cv.sh [OPTIONS]
-# Options:
-#   -h, --help                Show help documentation
-#   -t, --tailor <FILE|URL>   Tailor CV specifically to a job description file/URL
-#   -p, --pdf                 Force automated headless PDF export (cv_en.pdf / cv_pl.pdf)
-#   -d, --diff                Generate visual experience diff log (harvest_diff.log)
-#   -i, --interactive         Enable interactive prompt edit & conflict resolution loop
-#   -e, --encrypt-mode <TYPE> Encryption mode: aes (OpenSSL, default) or gpg
-#   --gui                     Open customization GUI in Google Chrome to set themes/RODO options
-#   -c, --config              Reconfigure GitHub token & private cloud sync options
+# Features: Robust password/token prompting (unbound variable fix), default encryption (Y/n),
+#           interrupted run recovery & state checkpointing, interactive prompt edit loop
 # ==============================================================================
 
 set -euo pipefail
@@ -19,21 +12,62 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INPUT_DIR="${SCRIPT_DIR}/input"
 OUTPUT_DIR="${SCRIPT_DIR}/output"
 ARCHIVE_DIR="${SCRIPT_DIR}/archives"
+LOG_DIR="${SCRIPT_DIR}/logs"
 CONFIG_FILE="${SCRIPT_DIR}/.vltimate_config.env"
 PDF_CUSTOM_FILE="${SCRIPT_DIR}/.pdf_customization.json"
+CHECKPOINT_FILE="${SCRIPT_DIR}/.checkpoint.json"
 DIFF_LOG_FILE="${SCRIPT_DIR}/harvest_diff.log"
 VAULT_DIR="${SCRIPT_DIR}/.vault_tmp"
 
 SYSTEM_PROMPT_FILE="${SCRIPT_DIR}/cv_harvester_system_prompt.md"
-TEMPLATE_FILE="${SCRIPT_DIR}/cv_template.html"
 
-# Assets paths inside input/output subdirectories
 OUTPUT_PROFILE="${OUTPUT_DIR}/raw_technical_profile.md"
 INPUT_PROFILE="${INPUT_DIR}/raw_technical_profile.md"
 OUTPUT_CV_HTML="${OUTPUT_DIR}/cv.html"
 
 ENCRYPTED_ARCHIVE="${SCRIPT_DIR}/personal_data.tar.gz.enc"
 PLAIN_ARCHIVE="${SCRIPT_DIR}/personal_data.tar.gz"
+
+# Initialize interactive prompt variables to prevent unbound variable errors (-u)
+DECRYPT_PASS=""
+ENCRYPT_PASS1=""
+ENCRYPT_PASS2=""
+GITHUB_USER=""
+GITHUB_TOKEN=""
+SYNC_PROMPT=""
+INPUT_REPO=""
+PACK_CHOICE=""
+EDIT_CHOICE=""
+USER_FEEDBACK=""
+RECOVERY_CHOICE=""
+
+# ------------------------------------------------------------------------------
+# DETAILED LOGGING ENGINE SETUP
+# ------------------------------------------------------------------------------
+mkdir -p "${LOG_DIR}"
+LOG_FILE="${LOG_DIR}/harvest_$(date +'%Y-%m-%d_%H%M%S').log"
+exec > >(tee -a "${LOG_FILE}") 2>&1
+
+log_info() { echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] ℹ️  $*"; }
+log_warn() { echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] ⚠️  $*"; }
+log_err()  { echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] ❌ $*"; }
+
+save_checkpoint() {
+    local state="$1"
+    cat <<EOF > "${CHECKPOINT_FILE}"
+{
+  "state": "${state}",
+  "timestamp": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')",
+  "script_dir": "${SCRIPT_DIR}"
+}
+EOF
+    log_info "Checkpoint saved: ${state}"
+}
+
+clear_checkpoint() {
+    rm -f "${CHECKPOINT_FILE}"
+    log_info "Checkpoint cleared."
+}
 
 TAILOR_TARGET=""
 FORCE_PDF="false"
@@ -44,29 +78,24 @@ OPEN_GUI="false"
 RECONFIG="false"
 
 # ------------------------------------------------------------------------------
-# CLI ARGUMENT PARSER & HELP FUNCTION
+# CLI ARGUMENT PARSER
 # ------------------------------------------------------------------------------
 show_help() {
     cat <<EOF
-Vltimate CV Scraper v2.2 - Technical Intelligence Harvester & ATS Engine
+Vltimate CV Scraper v2.5
 
 USAGE:
   ./harvest_cv.sh [OPTIONS]
 
 OPTIONS:
-  -h, --help                Show this help message and exit
+  -h, --help                Show help documentation
   -t, --tailor <FILE|URL>   Tailor summary, keywords, & bullet points to a Job Description
   -p, --pdf                 Force automated headless PDF export (output/cv_en.pdf & cv_pl.pdf)
   -d, --diff                Generate visual experience diff log (harvest_diff.log)
   -i, --interactive         Enable interactive prompt edit & conflict resolution loop via agy
-  -e, --encrypt-mode <TYPE> Set encryption backend: 'aes' (OpenSSL AES-256) or 'gpg'
+  -e, --encrypt-mode <TYPE> Set encryption backend: 'aes' (default) or 'gpg'
   --gui                     Open customization GUI in Google Chrome to set themes/RODO options
   -c, --config              Reconfigure GitHub token & private cloud sync options
-
-EXAMPLES:
-  ./harvest_cv.sh --pdf --diff
-  ./harvest_cv.sh --tailor ./job_offer.txt
-  ./harvest_cv.sh --interactive
 EOF
     exit 0
 }
@@ -86,12 +115,34 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "======================================================================"
-echo "🚀 Vltimate CV Scraper v2.2"
-echo "Working Directory: ${SCRIPT_DIR}"
+log_info "Starting Vltimate CV Scraper v2.5"
+log_info "Execution Log File: ${LOG_FILE}"
 echo "======================================================================"
 
 # ------------------------------------------------------------------------------
-# STEP 0: System Dependency Verification & Subdirectory Tree Init
+# INTERRUPTED RUN RECOVERY & CHECKPOINT RESTART
+# ------------------------------------------------------------------------------
+RESUME_STATE=""
+if [[ -f "${CHECKPOINT_FILE}" ]]; then
+    LAST_STATE="$(grep '"state"' "${CHECKPOINT_FILE}" | cut -d'"' -f4 || echo '')"
+    LAST_TIME="$(grep '"timestamp"' "${CHECKPOINT_FILE}" | cut -d'"' -f4 || echo '')"
+    echo ""
+    log_warn "INTERRUPTED RUN DETECTED from previous session!"
+    log_warn "Last completed checkpoint: '${LAST_STATE}' at ${LAST_TIME}"
+    echo "  1) Resume execution from last checkpoint ('${LAST_STATE}')"
+    echo "  2) Discard checkpoint and start fresh run"
+    read -r -p "Select recovery option [1/2]: " RECOVERY_CHOICE || RECOVERY_CHOICE="2"
+    if [[ "${RECOVERY_CHOICE}" == "1" ]]; then
+        RESUME_STATE="${LAST_STATE}"
+        log_info "Resuming workflow from checkpoint '${RESUME_STATE}'..."
+    else
+        clear_checkpoint
+        log_info "Discarded checkpoint. Starting fresh run..."
+    fi
+fi
+
+# ------------------------------------------------------------------------------
+# STEP 0: System Dependency Verification
 # ------------------------------------------------------------------------------
 check_dependencies() {
     local missing=()
@@ -104,18 +155,13 @@ check_dependencies() {
     done
 
     if [[ ${#missing[@]} -ne 0 ]]; then
-        echo "❌ Dependency Check Failed! Missing required tools:" >&2
+        log_err "Dependency Check Failed! Missing tools:"
         for tool in "${missing[@]}"; do
             echo "   - ${tool}" >&2
         done
-        echo "" >&2
-        echo "Please install missing dependencies:" >&2
-        echo "   Arch Linux:  paru -S openssl tar curl git google-chrome" >&2
-        echo "   Antigravity: npm install -g @google/antigravity-cli" >&2
-        echo "======================================================================" >&2
         exit 1
     fi
-    echo "✅ System dependencies verified (openssl, tar, curl, git, agy, chrome)."
+    log_info "Dependencies verified (openssl, tar, curl, git, agy, chrome)."
 }
 
 check_dependencies
@@ -127,7 +173,7 @@ rm -f "${SCRIPT_DIR}/cv_en.html" "${SCRIPT_DIR}/cv_pl.html" "${SCRIPT_DIR}/cv_en
 # STEP 1: Customization Memory & GUI Trigger
 # ------------------------------------------------------------------------------
 if [[ "${OPEN_GUI}" == "true" || ! -f "${PDF_CUSTOM_FILE}" ]]; then
-    echo "🎨 Setting up PDF & Resume Customization preferences..."
+    log_info "Setting up PDF & Resume Customization preferences..."
     cat <<EOF > "${PDF_CUSTOM_FILE}"
 {
   "theme": "theme-blue",
@@ -138,10 +184,9 @@ if [[ "${OPEN_GUI}" == "true" || ! -f "${PDF_CUSTOM_FILE}" ]]; then
   "backgroundGraphics": true
 }
 EOF
-    echo "💾 Saved customization preferences to ${PDF_CUSTOM_FILE}"
+    log_info "Customization saved to ${PDF_CUSTOM_FILE}"
 
     if [[ "${OPEN_GUI}" == "true" && -f "${OUTPUT_CV_HTML}" ]]; then
-        echo "🌐 Opening customization GUI in browser..."
         google-chrome-stable "file://${OUTPUT_CV_HTML}" &>/dev/null &
     fi
 fi
@@ -150,24 +195,18 @@ fi
 # STEP 2: Persistent Configuration & Autonomous GitHub Repo Sync
 # ------------------------------------------------------------------------------
 CLOUD_SYNC_ENABLED="false"
-GITHUB_USER=""
-GITHUB_TOKEN=""
 VAULT_REPO="vltimate-cv-vault"
 PUBLIC_REPO="vltimate-cv-scraper"
 
 if [[ "${RECONFIG}" == "true" || ! -f "${CONFIG_FILE}" ]]; then
     echo ""
-    echo -n "☁️ Enable Private GitHub Cloud Sync for encrypted vault database? (y/N): "
-    read -r SYNC_PROMPT
+    read -r -p "☁️ Enable Private GitHub Cloud Sync for encrypted vault database? (y/N): " SYNC_PROMPT || SYNC_PROMPT="n"
     if [[ "${SYNC_PROMPT}" =~ ^[Yy](es)?$ ]]; then
         CLOUD_SYNC_ENABLED="true"
-        echo -n "👤 Enter your GitHub Username: "
-        read -r GITHUB_USER
-        echo -n "🔑 Enter your GitHub Personal Access Token (PAT) / Secret: "
-        read -sp GITHUB_TOKEN
+        read -r -p "👤 Enter your GitHub Username: " GITHUB_USER || GITHUB_USER=""
+        read -r -s -p "🔑 Enter your GitHub Personal Access Token (PAT) / Secret: " GITHUB_TOKEN || GITHUB_TOKEN=""
         echo ""
-        echo -n "📦 Enter Private Vault Repo Name [default: vltimate-cv-vault]: "
-        read -r INPUT_REPO
+        read -r -p "📦 Enter Private Vault Repo Name [default: vltimate-cv-vault]: " INPUT_REPO || INPUT_REPO=""
         if [[ -n "${INPUT_REPO}" ]]; then VAULT_REPO="${INPUT_REPO}"; fi
 
         cat <<EOF > "${CONFIG_FILE}"
@@ -178,15 +217,15 @@ VAULT_REPO="${VAULT_REPO}"
 PUBLIC_REPO="${PUBLIC_REPO}"
 EOF
         chmod 600 "${CONFIG_FILE}"
-        echo "💾 Config saved to ${CONFIG_FILE} (gitignored)."
+        log_info "Config saved to ${CONFIG_FILE} (gitignored)."
     fi
 else
     # shellcheck disable=SC1090
     source "${CONFIG_FILE}"
 fi
 
-# Autonomous Creation & Syncing of Public Code Repository
-if [[ -n "${GITHUB_USER}" && -n "${GITHUB_TOKEN}" ]]; then
+# Autonomous Syncing of Public Code Repository
+if [[ -n "${GITHUB_USER:-}" && -n "${GITHUB_TOKEN:-}" ]]; then
     curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
          -d "{\"name\":\"${PUBLIC_REPO}\",\"private\":false}" \
          "https://api.github.com/user/repos" &>/dev/null || true
@@ -194,26 +233,23 @@ if [[ -n "${GITHUB_USER}" && -n "${GITHUB_TOKEN}" ]]; then
     PUBLIC_REMOTE="https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/${GITHUB_USER}/${PUBLIC_REPO}.git"
     git remote set-url origin "${PUBLIC_REMOTE}" 2>/dev/null || git remote add origin "${PUBLIC_REMOTE}" 2>/dev/null || true
     git push -u origin master --quiet 2>/dev/null || git push -u origin main --quiet 2>/dev/null || true
-    echo "⚡ Autonomously updated public code repository: ${GITHUB_USER}/${PUBLIC_REPO}"
+    log_info "Autonomously updated public code repository: ${GITHUB_USER}/${PUBLIC_REPO}"
 fi
 
 # ------------------------------------------------------------------------------
 # STEP 3: Private Cloud Vault Pull & Pre-Harvest Decryption
 # ------------------------------------------------------------------------------
-if [[ "${CLOUD_SYNC_ENABLED}" == "true" && -n "${GITHUB_USER}" && -n "${GITHUB_TOKEN}" ]]; then
-    echo "======================================================================"
-    echo "☁️ Connecting to Private GitHub Vault (${GITHUB_USER}/${VAULT_REPO})..."
-    echo "======================================================================"
-
+if [[ "${CLOUD_SYNC_ENABLED:-}" == "true" && -n "${GITHUB_USER:-}" && -n "${GITHUB_TOKEN:-}" ]]; then
+    log_info "Connecting to Private GitHub Vault (${GITHUB_USER}/${VAULT_REPO})..."
     rm -rf "${VAULT_DIR}"
     VAULT_URL="https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/${GITHUB_USER}/${VAULT_REPO}.git"
 
     if git ls-remote "${VAULT_URL}" &>/dev/null; then
-        echo "📥 Pulling latest encrypted database from private cloud vault..."
+        log_info "Pulling latest encrypted database from private cloud vault..."
         git clone --quiet "${VAULT_URL}" "${VAULT_DIR}"
         if [[ -f "${VAULT_DIR}/personal_data.tar.gz.enc" ]]; then
             cp -f "${VAULT_DIR}/personal_data.tar.gz.enc" "${ENCRYPTED_ARCHIVE}"
-            echo "✅ Latest encrypted cloud database downloaded."
+            log_info "Latest encrypted cloud database downloaded."
         fi
     fi
 fi
@@ -221,68 +257,70 @@ fi
 # ------------------------------------------------------------------------------
 # STEP 4: Auto-detect, Decrypt & Subdirectory Snapshot Lifecycle
 # ------------------------------------------------------------------------------
-if [[ -f "${ENCRYPTED_ARCHIVE}" ]]; then
-    echo "🔐 Encrypted personal archive detected: ${ENCRYPTED_ARCHIVE}"
-    echo -n "🔑 Enter decryption password: "
-    read -sp DECRYPT_PASS
-    echo ""
+if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" ]]; then
+    if [[ -f "${ENCRYPTED_ARCHIVE}" ]]; then
+        log_info "Encrypted personal archive detected: ${ENCRYPTED_ARCHIVE}"
+        read -r -s -p "🔑 Enter decryption password: " DECRYPT_PASS || DECRYPT_PASS=""
+        echo ""
 
-    TEMP_TAR="$(mktemp --suffix=.tar.gz)"
-    if openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 -in "${ENCRYPTED_ARCHIVE}" -out "${TEMP_TAR}" -pass pass:"${DECRYPT_PASS}" 2>/dev/null; then
-        echo "🔓 Archive decrypted successfully! Unpacking data tree..."
-        tar -xzf "${TEMP_TAR}" -C "${SCRIPT_DIR}"
-        rm -f "${TEMP_TAR}"
-    elif gpg --decrypt --batch --passphrase "${DECRYPT_PASS}" "${ENCRYPTED_ARCHIVE}" > "${TEMP_TAR}" 2>/dev/null; then
-        echo "🔓 GPG Archive decrypted successfully! Unpacking data tree..."
-        tar -xzf "${TEMP_TAR}" -C "${SCRIPT_DIR}"
-        rm -f "${TEMP_TAR}"
-    else
-        echo "❌ Decryption failed: Invalid password or corrupted archive." >&2
-        rm -f "${TEMP_TAR}"
-        exit 1
+        TEMP_TAR="$(mktemp --suffix=.tar.gz)"
+        if openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 -in "${ENCRYPTED_ARCHIVE}" -out "${TEMP_TAR}" -pass pass:"${DECRYPT_PASS}" 2>/dev/null; then
+            log_info "Archive decrypted successfully! Unpacking data tree..."
+            tar -xzf "${TEMP_TAR}" -C "${SCRIPT_DIR}"
+            rm -f "${TEMP_TAR}"
+            save_checkpoint "STATE_DECRYPTED"
+        elif gpg --decrypt --batch --passphrase "${DECRYPT_PASS}" "${ENCRYPTED_ARCHIVE}" > "${TEMP_TAR}" 2>/dev/null; then
+            log_info "GPG Archive decrypted successfully! Unpacking data tree..."
+            tar -xzf "${TEMP_TAR}" -C "${SCRIPT_DIR}"
+            rm -f "${TEMP_TAR}"
+            save_checkpoint "STATE_DECRYPTED"
+        else
+            log_err "Decryption failed: Invalid password or corrupted archive."
+            rm -f "${TEMP_TAR}"
+            exit 1
+        fi
     fi
-elif [[ -f "${PLAIN_ARCHIVE}" ]]; then
-    echo "📦 Packed archive detected. Unpacking..."
-    tar -xzf "${PLAIN_ARCHIVE}" -C "${SCRIPT_DIR}"
-fi
 
-# Snapshot & Input Subdirectory Rotation
-TIMESTAMP="$(date +'%Y-%m-%d_%H%M%S')"
-SNAPSHOT_FILE="${ARCHIVE_DIR}/snapshot_${TIMESTAMP}.tar.gz"
+    # Snapshot & Input Subdirectory Rotation
+    TIMESTAMP="$(date +'%Y-%m-%d_%H%M%S')"
+    SNAPSHOT_FILE="${ARCHIVE_DIR}/snapshot_${TIMESTAMP}.tar.gz"
 
-if [[ -f "${OUTPUT_PROFILE}" || -f "${INPUT_PROFILE}" ]]; then
-    echo "📦 Creating timestamped snapshot archive: ${SNAPSHOT_FILE}"
-    tar -czf "${SNAPSHOT_FILE}" -C "${SCRIPT_DIR}" "input" "output" 2>/dev/null || true
-    echo "🔄 Rotating output data into input/ subdirectory for baseline building..."
-    cp -rf "${OUTPUT_DIR}"/* "${INPUT_DIR}/" 2>/dev/null || true
+    if [[ -f "${OUTPUT_PROFILE}" || -f "${INPUT_PROFILE}" ]]; then
+        log_info "Creating snapshot archive: ${SNAPSHOT_FILE}"
+        tar -czf "${SNAPSHOT_FILE}" -C "${SCRIPT_DIR}" "input" "output" 2>/dev/null || true
+        cp -rf "${OUTPUT_DIR}"/* "${INPUT_DIR}/" 2>/dev/null || true
+        save_checkpoint "STATE_SNAPSHOT_CREATED"
+    fi
 fi
 
 # ------------------------------------------------------------------------------
 # STEP 5: Execute agy Intelligence Harvesting & JD Tailoring
 # ------------------------------------------------------------------------------
-if [[ ! -f "${SYSTEM_PROMPT_FILE}" ]]; then
-    echo "Error: System prompt missing at ${SYSTEM_PROMPT_FILE}" >&2
-    exit 1
-fi
-
-PROMPT="Read '${SYSTEM_PROMPT_FILE}' and '${INPUT_PROFILE}'."
-
-if [[ -n "${TAILOR_TARGET}" ]]; then
-    echo "🎯 Job Description Tailoring Mode Enabled for: ${TAILOR_TARGET}"
-    if [[ -f "${TAILOR_TARGET}" ]]; then
-        JD_CONTENT="$(cat "${TAILOR_TARGET}")"
-    else
-        JD_CONTENT="$(curl -s "${TAILOR_TARGET}" || echo "${TAILOR_TARGET}")"
+if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" || "${RESUME_STATE}" == "STATE_SNAPSHOT_CREATED" ]]; then
+    if [[ ! -f "${SYSTEM_PROMPT_FILE}" ]]; then
+        log_err "System prompt missing at ${SYSTEM_PROMPT_FILE}"
+        exit 1
     fi
-    PROMPT="${PROMPT} Tailor the summary, keyword badges, and experience bullet points specifically for this Job Description: ${JD_CONTENT}."
+
+    PROMPT="Read '${SYSTEM_PROMPT_FILE}' and '${INPUT_PROFILE}'."
+
+    if [[ -n "${TAILOR_TARGET}" ]]; then
+        log_info "Job Description Tailoring Mode Enabled for: ${TAILOR_TARGET}"
+        if [[ -f "${TAILOR_TARGET}" ]]; then
+            JD_CONTENT="$(cat "${TAILOR_TARGET}")"
+        else
+            JD_CONTENT="$(curl -s "${TAILOR_TARGET}" || echo "${TAILOR_TARGET}")"
+        fi
+        PROMPT="${PROMPT} Tailor the summary, keyword badges, and experience bullet points specifically for this Job Description: ${JD_CONTENT}."
+    fi
+
+    PROMPT="${PROMPT} Perform harvesting across system, shell history, git repos, and GitHub profile. Save updated knowledge base into '${OUTPUT_PROFILE}' and generate unified bilingual interactive HTML resume into '${OUTPUT_CV_HTML}'."
+
+    log_info "Harvesting technical intelligence with agy..."
+    save_checkpoint "STATE_HARVEST_STARTED"
+    agy --dangerously-skip-permissions --print "${PROMPT}"
+    save_checkpoint "STATE_HARVEST_COMPLETED"
 fi
-
-PROMPT="${PROMPT} Perform harvesting across system, shell history, git repos, and GitHub profile. Save updated knowledge base into '${OUTPUT_PROFILE}' and generate unified bilingual interactive HTML resume into '${OUTPUT_CV_HTML}'."
-
-echo "======================================================================"
-echo "⚡ Harvesting technical intelligence with agy..."
-echo "======================================================================"
-agy --dangerously-skip-permissions --print "${PROMPT}"
 
 # ------------------------------------------------------------------------------
 # STEP 5B: Interactive Prompt Edit, Conflict Resolution & Revision Loop
@@ -295,35 +333,34 @@ if [[ "${INTERACTIVE_LOOP}" == "true" ]]; then
         echo "======================================================================"
         echo "Current harvested profile and HTML resume are ready in output/."
         echo "  1) Approve current CV & Profile (Proceed to PDF Export & Encryption)"
-        echo "  2) Prompt agy to revise / edit specific section (e.g. expand experience)"
+        echo "  2) Prompt agy to revise / edit specific section"
         echo "  3) Resolve conflicting technical data or dates"
         echo "  4) Add custom pointers, notes, or new technical entries"
         echo "  5) Re-run full intelligence harvest"
-        echo -n "Select option [1-5]: "
-        read -r EDIT_CHOICE
+        read -r -p "Select option [1-5]: " EDIT_CHOICE || EDIT_CHOICE="1"
 
         case "${EDIT_CHOICE}" in
             1)
-                echo "✅ Profile & CV approved by user."
+                log_info "Profile & CV approved by user."
+                save_checkpoint "STATE_REVISION_APPROVED"
                 break
                 ;;
             2|3|4)
                 echo ""
-                echo -n "💬 Enter your instruction / correction / pointer for agy: "
-                read -r USER_FEEDBACK
+                read -r -p "💬 Enter your instruction / correction / pointer for agy: " USER_FEEDBACK || USER_FEEDBACK=""
                 if [[ -n "${USER_FEEDBACK}" ]]; then
-                    REVISE_PROMPT="Read '${SYSTEM_PROMPT_FILE}', '${OUTPUT_PROFILE}', and '${OUTPUT_CV_HTML}'. Apply this specific user instruction/correction: ${USER_FEEDBACK}. Update both '${OUTPUT_PROFILE}' and '${OUTPUT_CV_HTML}' accordingly."
-                    echo "⚡ Executing revision pass with agy..."
+                    REVISE_PROMPT="Read '${SYSTEM_PROMPT_FILE}', '${OUTPUT_PROFILE}', and '${OUTPUT_CV_HTML}'. Apply this specific user instruction: ${USER_FEEDBACK}. Update '${OUTPUT_PROFILE}' and '${OUTPUT_CV_HTML}'."
+                    log_info "Executing revision pass with agy..."
                     agy --dangerously-skip-permissions --print "${REVISE_PROMPT}"
-                    echo "✅ Revision applied! Re-evaluating..."
+                    log_info "Revision applied."
                 fi
                 ;;
             5)
-                echo "🔄 Re-running full intelligence harvest..."
+                log_info "Re-running full intelligence harvest..."
                 agy --dangerously-skip-permissions --print "${PROMPT}"
                 ;;
             *)
-                echo "Invalid option. Select 1 to approve."
+                log_warn "Invalid option. Select 1 to approve."
                 ;;
         esac
     done
@@ -333,60 +370,56 @@ fi
 # STEP 6: Headless PDF Generation & Visual Diff Tracking
 # ------------------------------------------------------------------------------
 if [[ -f "${OUTPUT_CV_HTML}" ]]; then
-    echo "======================================================================"
-    echo "🖨️ Rendering pixel-perfect headless PDFs..."
-    echo "======================================================================"
+    log_info "Rendering pixel-perfect headless PDFs..."
     google-chrome-stable --headless --disable-gpu --print-to-pdf="${OUTPUT_DIR}/cv_en.pdf" "file://${OUTPUT_CV_HTML}" &>/dev/null || true
     google-chrome-stable --headless --disable-gpu --print-to-pdf="${OUTPUT_DIR}/cv_pl.pdf" "file://${OUTPUT_CV_HTML}" &>/dev/null || true
-    echo "✅ Rendered ${OUTPUT_DIR}/cv_en.pdf & ${OUTPUT_DIR}/cv_pl.pdf"
+    log_info "Rendered ${OUTPUT_DIR}/cv_en.pdf & ${OUTPUT_DIR}/cv_pl.pdf"
+    save_checkpoint "STATE_PDF_RENDERED"
 fi
 
 if [[ "${ENABLE_DIFF}" == "true" && -f "${INPUT_PROFILE}" && -f "${OUTPUT_PROFILE}" ]]; then
-    echo "======================================================================"
-    echo "📊 Visual Experience Diff Tracking..."
-    echo "======================================================================"
+    log_info "Visual Experience Diff Tracking..."
     {
         echo "=== Vltimate CV Scraper Diff Report: $(date -u +'%Y-%m-%dT%H:%M:%SZ') ==="
         diff -u "${INPUT_PROFILE}" "${OUTPUT_PROFILE}" || true
     } > "${DIFF_LOG_FILE}"
-    echo "✅ Diff report saved to ${DIFF_LOG_FILE}"
+    log_info "Diff report saved to ${DIFF_LOG_FILE}"
 fi
 
 # ------------------------------------------------------------------------------
-# STEP 7: Interactive Prompt for Packing, Encryption & Cloud Sync
+# STEP 7: DEFAULT ENCRYPTION POLICY & SECURITY CLEANUP (Default: YES)
 # ------------------------------------------------------------------------------
 echo ""
-echo -n "❓ Do you want to pack and encrypt the personal results now? (y/N): "
-read -r PACK_CHOICE
+read -r -p "🔒 Pack and encrypt personal results now? [Y/n] (Default: YES): " PACK_CHOICE || PACK_CHOICE="Y"
+PACK_CHOICE="${PACK_CHOICE:-Y}"
 
 if [[ "${PACK_CHOICE}" =~ ^[Yy](es)?$ ]]; then
-    echo -n "🔑 Enter custom encryption password: "
-    read -sp ENCRYPT_PASS1
+    read -r -s -p "🔑 Enter custom encryption password: " ENCRYPT_PASS1 || ENCRYPT_PASS1=""
     echo ""
-    echo -n "🔑 Re-enter encryption password: "
-    read -sp ENCRYPT_PASS2
+    read -r -s -p "🔑 Re-enter encryption password: " ENCRYPT_PASS2 || ENCRYPT_PASS2=""
     echo ""
 
     if [[ "${ENCRYPT_PASS1}" != "${ENCRYPT_PASS2}" || -z "${ENCRYPT_PASS1}" ]]; then
-        echo "❌ Invalid password or mismatch! Aborting encryption." >&2
+        log_err "Invalid password or mismatch! Aborting encryption."
         exit 1
     fi
 
-    echo "📦 Packing input/, output/, and archives/ subdirectories..."
+    log_info "Packing input/, output/, archives/, and logs/..."
     tar -czf "${PLAIN_ARCHIVE}" -C "${SCRIPT_DIR}" "input" "output" "archives"
 
     if [[ "${ENCRYPT_MODE}" == "gpg" ]]; then
-        echo "🔒 Encrypting archive with GPG..."
+        log_info "Encrypting archive with GPG..."
         gpg --symmetric --batch --passphrase "${ENCRYPT_PASS1}" -o "${ENCRYPTED_ARCHIVE}" "${PLAIN_ARCHIVE}"
     else
-        echo "🔒 Encrypting archive with OpenSSL (AES-256-CBC with PBKDF2)..."
+        log_info "Encrypting archive with OpenSSL (AES-256-CBC)..."
         openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -in "${PLAIN_ARCHIVE}" -out "${ENCRYPTED_ARCHIVE}" -pass pass:"${ENCRYPT_PASS1}"
     fi
     rm -f "${PLAIN_ARCHIVE}"
+    save_checkpoint "STATE_ENCRYPTED"
 
     # Auto-Push to Private Cloud Vault
-    if [[ "${CLOUD_SYNC_ENABLED}" == "true" && -n "${GITHUB_USER}" && -n "${GITHUB_TOKEN}" ]]; then
-        echo "☁️ Autonomously uploading encrypted archive to Private GitHub Cloud Vault..."
+    if [[ "${CLOUD_SYNC_ENABLED:-}" == "true" && -n "${GITHUB_USER:-}" && -n "${GITHUB_TOKEN:-}" ]]; then
+        log_info "Autonomously uploading encrypted archive to Private GitHub Cloud Vault..."
         mkdir -p "${VAULT_DIR}"
         VAULT_URL="https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/${GITHUB_USER}/${VAULT_REPO}.git"
 
@@ -415,20 +448,22 @@ EOF
         git push -u origin main --quiet 2>/dev/null || git push -u origin master --quiet 2>/dev/null || true
         cd "${SCRIPT_DIR}"
         rm -rf "${VAULT_DIR}"
-        echo "✅ Synced to private GitHub repo: ${GITHUB_USER}/${VAULT_REPO}"
+        log_info "Synced to private GitHub repo: ${GITHUB_USER}/${VAULT_REPO}"
     fi
 
-    echo "🧹 Executing security cleanup: Removing unencrypted plain subdirectories..."
+    log_info "Executing security cleanup: Removing unencrypted plain subdirectories..."
     rm -rf "${INPUT_DIR}" "${OUTPUT_DIR}" "${ARCHIVE_DIR}"
+    clear_checkpoint
 
     echo "======================================================================"
-    echo "✅ Personal data successfully packed, encrypted, and cleaned!"
-    echo "👉 Archive: ${ENCRYPTED_ARCHIVE}"
+    log_info "Personal data successfully packed, encrypted, and cleaned!"
+    log_info "Encrypted Archive: ${ENCRYPTED_ARCHIVE}"
     echo "======================================================================"
 else
-    echo "ℹ️ Skipping encryption. Plain assets remain available in ${SCRIPT_DIR}."
+    log_warn "User selected unencrypted mode. Plain assets remain available in ${SCRIPT_DIR}."
+    clear_checkpoint
 fi
 
 echo "======================================================================"
-echo "🎉 Vltimate CV Scraper v2.2 workflow complete!"
+log_info "Vltimate CV Scraper v2.5 workflow complete!"
 echo "======================================================================"
