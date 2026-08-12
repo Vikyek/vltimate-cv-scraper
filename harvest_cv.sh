@@ -124,7 +124,10 @@ read_secret() {
     local prompt="$1"
     local input=""
     local char=""
+    
+    tput civis >&2 2>/dev/null || true
     printf "%s" "$prompt" >&2
+    
     while IFS= read -r -s -n1 char; do
         if [[ -z "$char" ]]; then
             break
@@ -138,6 +141,8 @@ read_secret() {
             printf "*" >&2
         fi
     done
+    
+    tput cnorm >&2 2>/dev/null || true
     echo "" >&2
     echo "$input"
 }
