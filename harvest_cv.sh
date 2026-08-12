@@ -323,7 +323,9 @@ search_and_move_customization() {
     fi
 
     if [[ -n "${candidate}" && -f "${candidate}" ]]; then
-        mv -f "${candidate}" "${PDF_CUSTOM_FILE}"
+        if [[ ! "${candidate}" -ef "${PDF_CUSTOM_FILE}" ]]; then
+            mv -f "${candidate}" "${PDF_CUSTOM_FILE}"
+        fi
         chmod 600 "${PDF_CUSTOM_FILE}"
         log_info "${G_STAR} Automatically moved customization config: '${candidate}' -> './config/pdf_customization.json'"
         return 0
@@ -860,7 +862,7 @@ fi
 # ------------------------------------------------------------------------------
 # STEP 5: Execute agy Intelligence Harvesting & JD Tailoring
 # ------------------------------------------------------------------------------
-if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" || "${RESUME_STATE}" == "STATE_SNAPSHOT_CREATED" ]]; then
+if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" || "${RESUME_STATE}" == "STATE_SNAPSHOT_CREATED" || "${RESUME_STATE}" == "STATE_HARVEST_STARTED" ]]; then
     if [[ ! -f "${SYSTEM_PROMPT_FILE}" ]]; then
         log_err "System prompt missing at './cv_harvester_system_prompt.md'"
         exit 1
@@ -971,6 +973,19 @@ fi
 if [[ "${INTERACTIVE_LOOP}" == "true" ]]; then
     while true; do
         echo ""
+        read -r -p "👁️  Preview HTML resume in browser before deciding? [Y/n]: " PREV_CHOICE || PREV_CHOICE="y"
+        PREV_CHOICE="${PREV_CHOICE:-y}"
+        if [[ "${PREV_CHOICE,,}" == "y" ]]; then
+            if command -v google-chrome-stable &>/dev/null; then
+                google-chrome-stable "file://${OUTPUT_CV_HTML}" &>/dev/null &
+            elif [[ -n "${BROWSER:-}" ]]; then
+                "${BROWSER}" "file://${OUTPUT_CV_HTML}" &>/dev/null &
+            elif command -v xdg-open &>/dev/null; then
+                xdg-open "file://${OUTPUT_CV_HTML}" &>/dev/null &
+            fi
+        fi
+
+        echo ""
         echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
         echo -e "${C_BOLD}${C_MAGENTA}✦ Interactive Refinement Menu (via agy)${C_RESET}"
         echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
@@ -979,7 +994,8 @@ if [[ "${INTERACTIVE_LOOP}" == "true" ]]; then
         echo "  2) Prompt agy to revise / edit specific section"
         echo "  3) Add custom pointers, notes, or new technical entries"
         echo "  4) Re-run full intelligence harvest"
-        read -r -p "Select option [1-4]: " EDIT_CHOICE || EDIT_CHOICE="1"
+        read -r -p "Select option [1-4] (Default: 1): " EDIT_CHOICE || EDIT_CHOICE="1"
+        EDIT_CHOICE="${EDIT_CHOICE:-1}"
 
         case "${EDIT_CHOICE}" in
             1)
@@ -1056,13 +1072,15 @@ if [[ "${PACK_CHOICE}" =~ ^[Yy](es)?$ ]]; then
         log_info "Using encryption password from environment variable."
         ENCRYPT_PASS1="${ENCRYPT_PASS}"
     else
-        ENCRYPT_PASS1="$(read_secret "${G_KEY} Enter custom encryption password: ")"
-        ENCRYPT_PASS2="$(read_secret "${G_KEY} Re-enter encryption password: ")"
+        while true; do
+            ENCRYPT_PASS1="$(read_secret "${G_KEY} Enter custom encryption password: ")"
+            ENCRYPT_PASS2="$(read_secret "${G_KEY} Re-enter encryption password: ")"
 
-        if [[ "${ENCRYPT_PASS1}" != "${ENCRYPT_PASS2}" || -z "${ENCRYPT_PASS1}" ]]; then
-            log_err "Invalid password or mismatch! Aborting encryption."
-            exit 1
-        fi
+            if [[ "${ENCRYPT_PASS1}" == "${ENCRYPT_PASS2}" && -n "${ENCRYPT_PASS1}" ]]; then
+                break
+            fi
+            echo -e "${C_RED}❌ Invalid password or mismatch! Please try again.${C_RESET}\n"
+        done
     fi
 
     log_info "Packing './input/', './output/', and './archives/'..."
