@@ -43,3 +43,7 @@
 - **Transformative Successors**: Distinguish between minor upstream PRs vs. major transformative improvements where candidate work creates a next-step successor tool (e.g., `pkgscan`).
 - **Multi-Shell & System Log Mining**: Mine all installed shells (`~/.local/share/fish/fish_history`, `~/.bash_history`, `~/.zsh_history`), `journalctl` logs, and `/var/log/pacman.log`.
 - **Token Efficiency & agy Fallback**: Use deterministic heuristics first; invoke `agy` fallback when categorization is ambiguous.
+
+## 11. GitHub Profile & Recursive Cross-Site Link Scraping
+- **Profile & README Scraping**: Harvest candidate's GitHub user bio, location, social links, badges, stats, and special profile repository README (`<USERNAME>/<USERNAME>`).
+- **Recursive Linked Profile Discovery**: Extract linked external profiles (personal site, LinkedIn, Medium, DEV.to, Hashnode, GitLab, Codeberg, Docker Hub, StackOverflow, Kaggle, npm, PyPI) and recursively scrape candidate-authored technical skills, projects, certifications, and experience while ignoring third-party noise.

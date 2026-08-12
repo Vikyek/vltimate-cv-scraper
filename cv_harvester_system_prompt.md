@@ -83,12 +83,23 @@ journalctl --since "30 days ago" 2>/dev/null | grep -iE "paru|pacman|bcachefs|ca
 tail -n 200 /var/log/pacman.log 2>/dev/null | tail -n 100 || true
 ```
 
-### Step 2: GitHub Repository Scraping
+### Step 2: GitHub Profile, Special Repository & Linked Cross-Site Scraping
+Execute profile, README, and linked cross-platform intelligence discovery:
 ```bash
-# Fetch public repos for the verified username (e.g., Vikyek)
-curl -s https://api.github.com/users/<USERNAME>/repos | grep -E '"name"|"description"|"html_url"'
+# 1. Fetch GitHub User Profile Metadata (Bio, Location, Blog/Site Links, Social Accounts, Stats)
+curl -s https://api.github.com/users/<USERNAME>
+
+# 2. Fetch GitHub Special Profile README (e.g. Vikyek/Vikyek)
+curl -s https://raw.githubusercontent.com/<USERNAME>/<USERNAME>/master/README.md 2>/dev/null || \
+curl -s https://raw.githubusercontent.com/<USERNAME>/<USERNAME>/main/README.md 2>/dev/null || true
+
+# 3. Fetch Candidate's Public Repositories (Names, Descriptions, Topics, Stacks, Stars, Forks)
+curl -s "https://api.github.com/users/<USERNAME>/repos?per_page=100"
+
+# 4. Extract Linked Profiles & Sites (Personal Webpage, LinkedIn, Twitter/X, Medium, DEV.to, Hashnode, GitLab, Codeberg, Docker Hub, StackOverflow, Kaggle, npm, PyPI)
+# Follow linked URLs recursively to scrape candidate-authored technical content, project writeups, certifications, and skills.
 ```
-- Verify repository ownership, main languages used, and commit activity.
+- **Attribution & Scope Boundary**: Scrape candidate-authored data, project writeups, bio details, stats, badges, and skills across all linked sites. Ignore third-party noise, unrelated comments, or external non-candidate content.
 
 ### Step 3: Input Subdirectory & Previous Baseline Inspection
 - Read previous baseline technical data from `input/raw_technical_profile.md` if available to build upon and expand.
