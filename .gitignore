@@ -4,6 +4,9 @@ devel/
 # Ignore Project-Specific Local Agent Rules
 .agents/
 
+# Ignore Persistent Local Unencrypted Preview Subdirectory (Never Uploaded/Synced)
+local_preview/
+
 # Ignore Personal Data Subdirectories & Generated Assets
 input/
 output/

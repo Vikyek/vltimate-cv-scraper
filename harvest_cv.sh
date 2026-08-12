@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Vltimate CV Scraper v3.0 (Production Master)
+# Vltimate CV Scraper v3.1 (Production Master)
 # Usage: ./harvest_cv.sh [OPTIONS]
 # Features:
-#   - Clean console logging (timestamps log file only, unless --verbose)
-#   - Quoted relative path formatting ('./output/', './input/...')
+#   - Persistent local unencrypted preview ('./local_preview/') for local viewing
+#   - Quoted relative path formatting ('./output/', './input/', './local_preview/')
 #   - Customization GUI re-use prompt ([y/N] default keep)
 #   - Env var detection (bypasses prompts if DECRYPT_PASS / ENCRYPT_PASS / GH_TOKEN set)
 #   - Interactive encryption method selector & clean [Y/n] default prompting
@@ -19,6 +19,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INPUT_DIR="${SCRIPT_DIR}/input"
 OUTPUT_DIR="${SCRIPT_DIR}/output"
 ARCHIVE_DIR="${SCRIPT_DIR}/archives"
+LOCAL_PREVIEW_DIR="${SCRIPT_DIR}/local_preview"
 LOG_DIR="${SCRIPT_DIR}/logs"
 CONFIG_FILE="${SCRIPT_DIR}/.vltimate_config.env"
 PDF_CUSTOM_FILE="${SCRIPT_DIR}/.pdf_customization.json"
@@ -61,6 +62,7 @@ INTERACTIVE_LOOP="true"
 ENCRYPT_MODE="aes"
 OPEN_GUI="false"
 RECONFIG="false"
+ONLY_VIEW="false"
 
 # ------------------------------------------------------------------------------
 # DETAILED LOGGING ENGINE & CLEAN CONSOLE OUTPUT
@@ -150,7 +152,7 @@ run_with_spinner() {
 # ------------------------------------------------------------------------------
 show_help() {
     cat <<EOF
-Vltimate CV Scraper v3.0 - Technical Intelligence Harvester & ATS Engine
+Vltimate CV Scraper v3.1 - Technical Intelligence Harvester & ATS Engine
 
 USAGE:
   ./harvest_cv.sh [OPTIONS]
@@ -158,6 +160,7 @@ USAGE:
 OPTIONS:
   -h, --help                Show help documentation
   -v, --verbose             Print ISO timestamps in live console output
+  --view                    Open local preview HTML resume in Google Chrome
   -t, --tailor <FILE|URL>   Tailor summary, keywords, & bullet points to a Job Description
   -p, --pdf                 Force automated headless PDF export (output/cv_en.pdf & cv_pl.pdf)
   -d, --diff                Generate visual experience diff log ('./harvest_diff.log')
@@ -173,6 +176,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         -h|--help) show_help ;;
         -v|--verbose) VERBOSE="true"; shift ;;
+        --view) ONLY_VIEW="true"; shift ;;
         -t|--tailor) TAILOR_TARGET="$2"; shift 2 ;;
         -p|--pdf) FORCE_PDF="true"; shift ;;
         -d|--diff) ENABLE_DIFF="true"; shift ;;
@@ -184,8 +188,18 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+if [[ "${ONLY_VIEW}" == "true" ]]; then
+    if [[ -f "${LOCAL_PREVIEW_DIR}/cv.html" ]]; then
+        log_info "Opening local preview HTML resume in Google Chrome..."
+        google-chrome-stable "file://${LOCAL_PREVIEW_DIR}/cv.html" &>/dev/null &
+    else
+        log_err "No local preview found at './local_preview/cv.html'. Run ./harvest_cv.sh first."
+    fi
+    exit 0
+fi
+
 echo "======================================================================"
-log_info "Starting Vltimate CV Scraper v3.0"
+log_info "Starting Vltimate CV Scraper v3.1"
 log_info "Execution Log File: '${LOG_FILE}'"
 echo "======================================================================"
 
@@ -235,7 +249,7 @@ check_dependencies() {
 }
 
 check_dependencies
-mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}" "${ARCHIVE_DIR}"
+mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}" "${ARCHIVE_DIR}" "${LOCAL_PREVIEW_DIR}"
 
 rm -f "${SCRIPT_DIR}/cv_en.html" "${SCRIPT_DIR}/cv_pl.html" "${SCRIPT_DIR}/cv_en.pdf" "${SCRIPT_DIR}/cv_pl.pdf" "${SCRIPT_DIR}/raw_technical_profile.md"
 
@@ -503,13 +517,21 @@ if [[ "${INTERACTIVE_LOOP}" == "true" ]]; then
 fi
 
 # ------------------------------------------------------------------------------
-# STEP 7: Headless PDF Generation & Visual Diff Tracking
+# STEP 7: Headless PDF Generation & Persistent Local Preview Creation
 # ------------------------------------------------------------------------------
 if [[ -f "${OUTPUT_CV_HTML}" ]]; then
     run_with_spinner "Rendering pixel-perfect headless PDFs..." google-chrome-stable --headless --disable-gpu --print-to-pdf="${OUTPUT_DIR}/cv_en.pdf" "file://${OUTPUT_CV_HTML}"
     google-chrome-stable --headless --disable-gpu --print-to-pdf="${OUTPUT_DIR}/cv_pl.pdf" "file://${OUTPUT_CV_HTML}" &>/dev/null || true
     log_info "Rendered '${OUTPUT_DIR}/cv_en.pdf' & '${OUTPUT_DIR}/cv_pl.pdf'"
     save_checkpoint "STATE_PDF_RENDERED"
+
+    # Populate Persistent Local Unencrypted Preview Subdirectory (Never uploaded/synced)
+    mkdir -p "${LOCAL_PREVIEW_DIR}"
+    if [[ -f "${OUTPUT_PROFILE}" ]]; then cp -f "${OUTPUT_PROFILE}" "${LOCAL_PREVIEW_DIR}/raw_technical_profile.md"; fi
+    if [[ -f "${OUTPUT_CV_HTML}" ]]; then cp -f "${OUTPUT_CV_HTML}" "${LOCAL_PREVIEW_DIR}/cv.html"; fi
+    if [[ -f "${OUTPUT_DIR}/cv_en.pdf" ]]; then cp -f "${OUTPUT_DIR}/cv_en.pdf" "${LOCAL_PREVIEW_DIR}/cv_en.pdf"; fi
+    if [[ -f "${OUTPUT_DIR}/cv_pl.pdf" ]]; then cp -f "${OUTPUT_DIR}/cv_pl.pdf" "${LOCAL_PREVIEW_DIR}/cv_pl.pdf"; fi
+    log_info "Saved persistent unencrypted local preview to './local_preview/'"
 fi
 
 if [[ "${ENABLE_DIFF}" == "true" && -f "${INPUT_PROFILE}" && -f "${OUTPUT_PROFILE}" ]]; then
@@ -609,6 +631,13 @@ EOF
     echo "======================================================================"
     log_info "Personal data successfully packed, encrypted, and cleaned!"
     log_info "Encrypted Archive: '${ENCRYPTED_ARCHIVE}'"
+    echo "----------------------------------------------------------------------"
+    log_info "📄 Persistent Local Unencrypted Preview available in './local_preview/':"
+    log_info "   - Technical Profile: './local_preview/raw_technical_profile.md'"
+    log_info "   - Interactive HTML:  './local_preview/cv.html'"
+    log_info "   - English PDF:       './local_preview/cv_en.pdf'"
+    log_info "   - Polish PDF:        './local_preview/cv_pl.pdf'"
+    log_info "   (Protected by .gitignore - Never uploaded to any remote repository)"
     echo "======================================================================"
 else
     log_warn "User selected unencrypted mode. Plain assets remain available in '${SCRIPT_DIR}'."
@@ -616,5 +645,5 @@ else
 fi
 
 echo "======================================================================"
-log_info "Vltimate CV Scraper v3.0 workflow complete!"
+log_info "Vltimate CV Scraper v3.1 workflow complete!"
 echo "======================================================================"

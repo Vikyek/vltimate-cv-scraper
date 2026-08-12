@@ -1,7 +1,7 @@
 .\" Manpage for Vltimate CV Scraper
-.TH VLTIMATE-CV-SCRAPER 1 "12 August 2026" "v2.2" "Vltimate CV Scraper Manual"
+.TH VLTIMATE-CV-SCRAPER 1 "12 August 2026" "v3.1" "Vltimate CV Scraper Manual"
 .SH NAME
-vltimate-cv-scraper \- Technical Intelligence Harvester, Interactive Revision Loop & ATS Resume Engine
+vltimate-cv-scraper \- Technical Intelligence Harvester, Local Preview & ATS Resume Engine
 .SH SYNOPSIS
 .B harvest_cv.sh
 [\fIOPTIONS\fR]
@@ -9,12 +9,18 @@ vltimate-cv-scraper \- Technical Intelligence Harvester, Interactive Revision Lo
 .B Vltimate CV Scraper
 is an automated, privacy-conscious technical intelligence harvester and ATS resume engine. It scans local system architecture, shell command history, git configurations, and remote GitHub repositories to build an unformatted master knowledge base (\fBoutput/raw_technical_profile.md\fR), a unified interactive bilingual HTML resume (\fBoutput/cv.html\fR), and headless PDF exports (\fBoutput/cv_en.pdf\fR and \fBoutput/cv_pl.pdf\fR).
 
-It includes an interactive revision loop (\fB\-i, \-\-interactive\fR) allowing users to resolve data conflicts, request section edits, add custom pointers, or refine text live via \fBagy\fR prompting before finalizing PDF rendering and encryption.
+It creates a persistent, unencrypted local preview directory (\fB./local_preview/\fR) for convenient local viewing without requiring archive decryption. This local preview directory is strictly gitignored and never uploaded or synced to any remote repository.
 
 .SH OPTIONS
 .TP
 .BR \-h ", " \-\-help
 Display command usage and options summary.
+.TP
+.BR \-\-view
+Open the persistent local preview HTML resume (\fB./local_preview/cv.html\fR) in Google Chrome immediately.
+.TP
+.BR \-v ", " \-\-verbose
+Print ISO timestamps in live console output (timestamps are always saved to log files).
 .TP
 .BR \-i ", " \-\-interactive
 Enable interactive prompt edit, conflict resolution, and revision loop via \fBagy\fR.
@@ -38,6 +44,9 @@ Open interactive customization GUI in Google Chrome to set default PDF themes an
 Reconfigure persistent GitHub credentials and private cloud sync settings (\fB.vltimate_config.env\fR).
 
 .SH SUBDIRECTORY TREE
+.TP
+.I local_preview/
+Persistent local unencrypted copy of generated resumes and profile (strictly gitignored, never uploaded).
 .TP
 .I input/
 Stores baseline technical data rotated from prior runs to build upon.
