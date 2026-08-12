@@ -13,6 +13,7 @@
 # ==============================================================================
 
 set -euo pipefail
+ORIG_ARGS=("$@")
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INPUT_DIR="${SCRIPT_DIR}/input"
@@ -217,9 +218,29 @@ EOF
                     sed -i 's|</prefer>|<family>Noto Color Emoji</family></prefer>|' "${conf_file}"
                 fi
 
-                fc-cache -f -v 2>/dev/null || true
+                fc-cache -f 2>/dev/null || true
                 USE_SIMPLE_GLYPHS="false"
-                echo -e "${C_GREEN}✔ 'noto-fonts-emoji' installed and font cache refreshed!${C_RESET}\n"
+                save_config
+                
+                echo -e "${C_GREEN}✔ 'noto-fonts-emoji' installed & fontconfig configured!${C_RESET}"
+                echo -e "${C_CYAN}  Relaunching in a fresh terminal for rich emoji rendering...${C_RESET}\n"
+                sleep 1
+                
+                # Spawn fresh terminal with the same script & args, then exit
+                local relaunch_cmd="cd '${SCRIPT_DIR}' && '${SCRIPT_DIR}/harvest_cv.sh' ${ORIG_ARGS[*]:-}; exec bash"
+                if [[ -n "${TERMINAL:-}" ]]; then
+                    "${TERMINAL}" -e bash -c "${relaunch_cmd}" &
+                elif command -v i3-sensible-terminal &>/dev/null; then
+                    i3-sensible-terminal -e bash -c "${relaunch_cmd}" &
+                elif command -v kitty &>/dev/null; then
+                    kitty bash -c "${relaunch_cmd}" &
+                else
+                    echo -e "${C_GOLD}▲ Could not detect terminal emulator. Please reopen terminal manually.${C_RESET}"
+                    USE_SIMPLE_GLYPHS="true"
+                    init_glyphs
+                    break
+                fi
+                exit 0
                 ;;
             2)
                 USE_SIMPLE_GLYPHS="true"
