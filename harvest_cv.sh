@@ -144,7 +144,7 @@ init_glyphs() {
 check_and_prompt_emoji_font() {
     if ! has_emoji_font && [[ -z "${USE_SIMPLE_GLYPHS}" ]]; then
         echo -e "${C_GOLD}▲ WARNING: No Color Emoji Font (e.g. Noto Color Emoji) detected on your system!${C_RESET}"
-        echo -e "${C_CYAN}Rich color emojis (🌌, ✨, 💎, 🔒) may render as split wireframe boxes in your terminal.${C_RESET}\n"
+        echo -e "${C_CYAN}Rich color emojis (🌌, ✨, 💎, 🔒) may render as split wireframe boxes in your active terminal.${C_RESET}\n"
         echo "Options:"
         echo "  1) Auto-install 'noto-fonts-emoji' via paru/pacman (Recommended)"
         echo "  2) Switch to clean single-width fallback glyphs (✦, ⚡, ◈, ◆)"
@@ -160,8 +160,38 @@ check_and_prompt_emoji_font() {
                 elif command -v pacman &>/dev/null; then
                     sudo pacman -S --noconfirm noto-fonts-emoji || true
                 fi
+                
+                # Auto-generate fontconfig fallback rule if missing
+                if [[ ! -f "${HOME}/.config/fontconfig/fonts.conf" ]]; then
+                    mkdir -p "${HOME}/.config/fontconfig"
+                    cat <<'EOF' > "${HOME}/.config/fontconfig/fonts.conf"
+<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <alias>
+    <family>monospace</family>
+    <prefer>
+      <family>Noto Color Emoji</family>
+    </prefer>
+  </alias>
+</fontconfig>
+EOF
+                fi
+
                 fc-cache -f 2>/dev/null || true
+                
+                # Save false for future runs, but use clean glyphs for current live terminal session
                 USE_SIMPLE_GLYPHS="false"
+                save_config
+                
+                echo -e "${C_GREEN}✔ 'noto-fonts-emoji' installed & font cache reloaded!${C_RESET}"
+                echo -e "${C_CYAN}  (Using clean fallback glyphs for this active terminal session to prevent cached wireframe glitches.${C_RESET}"
+                echo -e "${C_CYAN}   Rich color emojis will activate automatically on your next terminal restart!)${C_RESET}\n"
+                
+                # Force simple glyphs for current session only
+                USE_SIMPLE_GLYPHS="true"
+                init_glyphs
+                return 0
                 ;;
             2)
                 USE_SIMPLE_GLYPHS="true"

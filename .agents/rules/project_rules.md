@@ -71,4 +71,5 @@
 ## 16. Automatic Font Detection & Auto-Fix Engine
 - **Programmatic Font Probing**: `has_emoji_font` probes `fontconfig` (`fc-list`) to detect installed color emoji font families (`Noto Color Emoji`, `Twemoji`, `JoyPixels`).
 - **Interactive Auto-Fix & Fallback Prompt**: If no color emoji font is detected, the script alerts the user with an interactive prompt: Option 1 (Auto-install `noto-fonts-emoji` via `paru` or `pacman`), Option 2 (Switch to clean single-width fallback glyphs `✦`, `⚡`, `◈`), Option 3 (Keep rich color emojis anyway).
+- **Active Session Font Cache Safeguard**: When `noto-fonts-emoji` is installed mid-run, `harvest_cv.sh` automatically generates `~/.config/fontconfig/fonts.conf` fallback rules, updates `fc-cache`, persists `USE_SIMPLE_GLYPHS="false"` for future terminal instances, and uses clean fallback glyphs for the current live session to prevent mid-run wireframe glitches.
 - **CLI Glyph Controls**: `--simple-glyphs` and `--rich-glyphs` allow forcing single-width glyphs or rich color emojis via command line options or `./config/vltimate_config.env`.
