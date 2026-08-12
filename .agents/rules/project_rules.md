@@ -66,4 +66,9 @@
 - **Silent Snapshot Archive Logging**: Snapshot archive creation is logged to `./logs/` silently and only printed to console output when `--verbose` (`-v`) is enabled.
 
 ## 15. Font Rendering & Universal Glyph Fallbacks
-- **Single-Width Universal Unicode Glyphs**: All CLI banners, status indicators, and prompts use universal single-width glyphs (`✦`, `⚡`, `◈`, `◆`, `◇`, `✔`, `✘`, `▲`, `ℹ`, `🗝`, `❖`) instead of complex multi-byte color emojis (`🌌`, `🔮`, `💎`, `🔒`, `✨`, `🎨`, `🔑`), guaranteeing 100% crisp rendering across all Linux terminal fonts without broken wireframes or split rectangle placeholders.
+- **Single-Width Universal Unicode Glyphs**: All CLI banners, status indicators, and prompts support single-width glyphs (`✦`, `⚡`, `◈`, `◆`, `◇`, `✔`, `✘`, `▲`, `ℹ`, `🗝`, `❖`) as clean fallbacks when color emoji font packages are unavailable.
+
+## 16. Automatic Font Detection & Auto-Fix Engine
+- **Programmatic Font Probing**: `has_emoji_font` probes `fontconfig` (`fc-list`) to detect installed color emoji font families (`Noto Color Emoji`, `Twemoji`, `JoyPixels`).
+- **Interactive Auto-Fix & Fallback Prompt**: If no color emoji font is detected, the script alerts the user with an interactive prompt: Option 1 (Auto-install `noto-fonts-emoji` via `paru` or `pacman`), Option 2 (Switch to clean single-width fallback glyphs `✦`, `⚡`, `◈`), Option 3 (Keep rich color emojis anyway).
+- **CLI Glyph Controls**: `--simple-glyphs` and `--rich-glyphs` allow forcing single-width glyphs or rich color emojis via command line options or `./config/vltimate_config.env`.
