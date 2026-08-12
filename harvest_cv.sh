@@ -1,17 +1,16 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Automated CV Harvester, Resume Engine & Encryption Suite
+# Vltimate CV Scraper & Resume Encryption Suite
 # Usage: ./harvest_cv.sh
-# Supports: Auto-detecting & decrypting existing archives, system harvesting via agy,
-#           and interactively packing & encrypting personal results with AES-256
-#           followed by a full security cleanup of unencrypted data.
+# Supports: Explicit dependency verification, auto-decrypting existing archives,
+#           system harvesting via agy, interactive AES-256 packing & encryption,
+#           and security cleanup of unencrypted data.
 # ==============================================================================
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OUTPUT_DIR="${SCRIPT_DIR}/output"
-mkdir -p "${OUTPUT_DIR}"
 
 SYSTEM_PROMPT_FILE="${SCRIPT_DIR}/cv_harvester_system_prompt.md"
 RAW_PROFILE_FILE="${SCRIPT_DIR}/raw_technical_profile.md"
@@ -22,9 +21,40 @@ ENCRYPTED_ARCHIVE="${SCRIPT_DIR}/personal_data.tar.gz.enc"
 PLAIN_ARCHIVE="${SCRIPT_DIR}/personal_data.tar.gz"
 
 echo "======================================================================"
-echo "🚀 Technical Intelligence Harvester & Encryption Suite"
+echo "🚀 Vltimate CV Scraper"
 echo "Working Directory: ${SCRIPT_DIR}"
 echo "======================================================================"
+
+# ------------------------------------------------------------------------------
+# STEP 0: Explicit Dependency Verification & Declaration
+# ------------------------------------------------------------------------------
+check_dependencies() {
+    local missing=()
+    local required_tools=("openssl" "tar" "curl" "git" "agy")
+
+    for tool in "${required_tools[@]}"; do
+        if ! command -v "${tool}" &>/dev/null; then
+            missing+=("${tool}")
+        fi
+    done
+
+    if [[ ${#missing[@]} -ne 0 ]]; then
+        echo "❌ Dependency Check Failed! Missing required tools:" >&2
+        for tool in "${missing[@]}"; do
+            echo "   - ${tool}" >&2
+        done
+        echo "" >&2
+        echo "Please install missing dependencies before running Vltimate CV Scraper:" >&2
+        echo "   Arch Linux:  paru -S openssl tar curl git" >&2
+        echo "   Antigravity: npm install -g @google/antigravity-cli" >&2
+        echo "======================================================================" >&2
+        exit 1
+    fi
+    echo "✅ All required system dependencies verified (openssl, tar, curl, git, agy)."
+}
+
+check_dependencies
+mkdir -p "${OUTPUT_DIR}"
 
 # ------------------------------------------------------------------------------
 # STEP 1: Auto-detect & Read Packed / Encrypted Results
@@ -60,14 +90,10 @@ fi
 
 PROMPT="Read '${SYSTEM_PROMPT_FILE}' and '${RAW_PROFILE_FILE}'. Perform the technical data harvesting workflow across the local system, shell history, git repos, and GitHub profile. Update '${RAW_PROFILE_FILE}', '${CV_EN_FILE}', and '${CV_PL_FILE}'. Save identical copies of all updated assets into '${OUTPUT_DIR}'."
 
-if command -v agy &>/dev/null; then
-    echo "======================================================================"
-    echo "⚡ Harvesting technical intelligence with agy..."
-    echo "======================================================================"
-    agy --dangerously-skip-permissions --print "${PROMPT}"
-else
-    echo "⚠️ 'agy' CLI command not found in PATH. Skipping automated harvest phase." >&2
-fi
+echo "======================================================================"
+echo "⚡ Harvesting technical intelligence with agy..."
+echo "======================================================================"
+agy --dangerously-skip-permissions --print "${PROMPT}"
 
 # Synchronize fallback copies to output dir
 cp -f "${RAW_PROFILE_FILE}" "${OUTPUT_DIR}/raw_technical_profile.md" 2>/dev/null || true
@@ -123,5 +149,5 @@ else
 fi
 
 echo "======================================================================"
-echo "🎉 Workflow complete!"
+echo "🎉 Vltimate CV Scraper workflow complete!"
 echo "======================================================================"
