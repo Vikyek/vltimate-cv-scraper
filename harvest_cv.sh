@@ -37,10 +37,10 @@ OUTPUT_CV_HTML="${OUTPUT_DIR}/cv.html"
 ENCRYPTED_ARCHIVE="${SCRIPT_DIR}/personal_data.tar.gz.enc"
 PLAIN_ARCHIVE="${SCRIPT_DIR}/personal_data.tar.gz"
 
-# Initialize variables to prevent unbound variable errors (-u)
-DECRYPT_PASS="${DECRYPT_PASS:-}"
-ENCRYPT_PASS="${ENCRYPT_PASS:-}"
-ENCRYPT_PASS1=""
+cleanup_secrets() {
+    unset GITHUB_TOKEN DECRYPT_PASS ENCRYPT_PASS ENCRYPT_PASS1 ENCRYPT_PASS2 GH_TOKEN VAULT_PAT 2>/dev/null || true
+}
+trap cleanup_secrets EXIT INT TERM
 ENCRYPT_PASS2=""
 GITHUB_USER="${GITHUB_USER:-Vikyek}"
 GITHUB_TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
