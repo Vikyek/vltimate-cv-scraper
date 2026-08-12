@@ -1,4 +1,4 @@
-# Vltimate CV Scraper v2.0
+# Vltimate CV Scraper v2.1
 
 An automated, privacy-conscious resume architecture, technical intelligence harvester, and job-tailoring suite built for software engineers, game developers, and systems specialists. Powered by **Antigravity CLI (`agy`)**, **OpenSSL AES-256 / GPG encryption**, **Google Chrome headless PDF rendering**, and **Tailwind CSS single-column ATS layout engine**.
 
@@ -6,50 +6,42 @@ An automated, privacy-conscious resume architecture, technical intelligence harv
 
 ## 🌟 Key Features
 
+- **Unified Interactive Bilingual HTML (`output/cv.html`)**: Consolidates English and Polish pages into a single interactive document with on-the-fly language toggling, theme switching, and RODO clause injectors. Eliminates redundant separate HTML files.
+- **Subdirectory Tree & Snapshot Lifecycle**:
+  - `input/`: Baseline technical profile data automatically rotated from previous runs to build upon.
+  - `output/`: Freshly generated resume assets (`raw_technical_profile.md`, `cv.html`, `cv_en.pdf`, `cv_pl.pdf`).
+  - `archives/`: Timestamped compressed snapshots (`snapshot_YYYY-MM-DD_HHMMSS.tar.gz`) of previous runs.
 - **Automated Data Harvesting**: Scans local OS specs, shell command history, git configurations, and remote GitHub profile repositories (`github.com/Vikyek`).
-- **Autonomous Repository Creation**: Automatically creates and syncs both public code repositories (`vltimate-cv-scraper`) and private encrypted vault repositories (`vltimate-cv-vault`) on GitHub via API tokens/SSH without manual prompts.
-- **Headless PDF Generation & Customization Memory**: Automatically renders pixel-perfect PDF files ([`cv_en.pdf`](cv_en.pdf) and [`cv_pl.pdf`](cv_pl.pdf)) using Google Chrome. Saves and remembers your layout, theme, and RODO preferences in `.pdf_customization.json`.
-- **Job Description (JD) Tailoring (`--tailor <file_or_url>`)**: Dynamically analyzes any job posting URL or text file, aligning your resume summary, keyword tag cloud, and experience bullet points specifically for that target role.
-- **Visual Experience Diff Tracker (`--diff`)**: Tracks newly harvested repos, kernel parameters, hardware skills, and tools across runs, generating a structured diff log ([`harvest_diff.log`](harvest_diff.log)).
-- **Dual Encryption Engine (`--encrypt-mode <aes|gpg>`)**: Supports OpenSSL AES-256-CBC and GPG key encryption modes with interactive password verification.
-- **Full Security Cleanup**: Automatically wipes unencrypted plain text profile and generated resume files after encryption to ensure personal data exists ONLY inside the encrypted archive.
-- **Bilingual ATS Resumes**: Maintains synchronized English ([`cv_en.html`](cv_en.html)) and Polish ([`cv_pl.html`](cv_pl.html)) interactive resumes with printable A4 paper sheets and responsive fluid views.
+- **Autonomous Repository Sync**: Automatically syncs public code repositories (`vltimate-cv-scraper`) and private encrypted vault repositories (`vltimate-cv-vault`) on GitHub via API tokens/SSH without manual prompts.
+- **Headless PDF Generation**: Automatically renders pixel-perfect PDF files (`output/cv_en.pdf` and `output/cv_pl.pdf`) using Google Chrome. Saves preferences in `.pdf_customization.json`.
+- **Job Description (JD) Tailoring (`--tailor <file_or_url>`)**: Dynamically aligns your resume summary, keyword tag cloud, and experience bullet points specifically for a target role.
+- **Visual Experience Diff Tracker (`--diff`)**: Tracks newly harvested technical experience across runs (`harvest_diff.log`).
+- **Dual Encryption Engine (`--encrypt-mode <aes|gpg>`)**: Supports OpenSSL AES-256-CBC and GPG key encryption modes.
+- **Full Security Cleanup**: Automatically wipes unencrypted plain text `input/`, `output/`, and `archives/` subdirectories after encryption to ensure personal data exists ONLY inside the encrypted archive.
 
 ---
 
-## ⚙️ System Dependencies
-
-| Dependency | Purpose | Installation (Arch Linux / `paru`) |
-| :--- | :--- | :--- |
-| **`agy`** | Antigravity CLI AI Engine | `npm install -g @google/antigravity-cli` / `agy` |
-| **`google-chrome-stable`** | Headless PDF Export & GUI | `paru -S google-chrome` |
-| **`openssl`** | AES-256-CBC Encryption & Decryption | `paru -S openssl` |
-| **`gpg`** | GPG Key Encryption | `paru -S gnupg` |
-| **`tar`** | Archive Packing & Unpacking | `paru -S tar` |
-| **`curl`** | GitHub API & Private Vault Sync | `paru -S curl` |
-| **`git`** | Repository & Vault Operations | `paru -S git` |
-
----
-
-## 📁 Repository Structure
+## 📁 Subdirectory Tree & Repository Structure
 
 ```
 .
 ├── cv_harvester_system_prompt.md  # Master system prompt & enterprise ATS screening rules
-├── raw_technical_profile.md       # Master unformatted technical knowledge base (Ignored by Git)
 ├── cv_template.html               # Clean, purged ModernCV layout container template
-├── cv_en.html                     # Generated ATS-optimized English resume (Ignored by Git)
-├── cv_pl.html                     # Generated ATS-optimized Polish resume (Ignored by Git)
-├── cv_en.pdf                      # Generated PDF English resume (Ignored by Git)
-├── cv_pl.pdf                      # Generated PDF Polish resume (Ignored by Git)
 ├── harvest_cv.sh                  # Interactive CLI harvester & encryption runner script
-├── harvest_diff.log               # Visual experience diff tracker log (Ignored by Git)
 ├── man/man1/vltimate-cv-scraper.1 # UNIX man page documentation
-├── output/                        # Backup directory for generated profile & resume assets (Ignored by Git)
-├── .vltimate_config.env           # Local persistent credentials & cloud sync config (Ignored by Git)
-├── .pdf_customization.json        # PDF rendering & theme customization memory (Ignored by Git)
+├── README.md                      # Project documentation
 ├── .gitignore                     # Git exclusions for encrypted archives & private data
-└── README.md                      # Project documentation
+│
+│--- DYNAMIC DATA SUBDIRECTORIES (Gitignored / Encrypted) ---
+├── input/                         # Baseline technical data rotated from previous run
+│   └── raw_technical_profile.md
+├── output/                        # Freshly generated resume & knowledge base assets
+│   ├── raw_technical_profile.md
+│   ├── cv.html                    # Unified interactive bilingual HTML resume (EN/PL)
+│   ├── cv_en.pdf                  # Rendered English PDF
+│   └── cv_pl.pdf                  # Rendered Polish PDF
+└── archives/                      # Timestamped compressed snapshots of prior runs
+    └── snapshot_*.tar.gz
 ```
 
 ---
@@ -63,23 +55,11 @@ USAGE:
 OPTIONS:
   -h, --help                Show help documentation
   -t, --tailor <FILE|URL>   Tailor summary, keywords, & bullet points to a Job Description
-  -p, --pdf                 Force automated headless PDF export (cv_en.pdf / cv_pl.pdf)
+  -p, --pdf                 Force automated headless PDF export (output/cv_en.pdf & cv_pl.pdf)
   -d, --diff                Generate visual experience diff log (harvest_diff.log)
   -e, --encrypt-mode <TYPE> Set encryption backend: 'aes' (OpenSSL AES-256) or 'gpg'
   --gui                     Open customization GUI in Google Chrome to set themes/RODO options
   -c, --config              Reconfigure GitHub token & private cloud sync options
-```
-
-### Examples
-```bash
-# 1. Standard harvest with PDF export & visual diff tracking
-./harvest_cv.sh --pdf --diff
-
-# 2. Tailor resume specifically for a job posting
-./harvest_cv.sh --tailor ./job_posting.txt --pdf
-
-# 3. Encrypt archive using GPG key encryption
-./harvest_cv.sh --encrypt-mode gpg
 ```
 
 ---
@@ -93,4 +73,4 @@ man ./man/man1/vltimate-cv-scraper.1
 ---
 
 ## 🔐 Security & Privacy Note
-Sensitive data, personal contact details, credentials (`.vltimate_config.env`), customization settings (`.pdf_customization.json`), and plain resume files (`raw_technical_profile.md`, `cv_en.html`, `cv_pl.html`, `cv_en.pdf`, `cv_pl.pdf`, `output/`) are strictly excluded from git tracking via `.gitignore`.
+Sensitive data, personal contact details, subdirectories (`input/`, `output/`, `archives/`), credentials (`.vltimate_config.env`), and customization settings (`.pdf_customization.json`) are strictly excluded from git tracking via `.gitignore`.

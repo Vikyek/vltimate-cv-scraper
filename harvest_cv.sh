@@ -1,31 +1,35 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Vltimate CV Scraper & Resume Encryption Suite v2.0
+# Vltimate CV Scraper v2.1
 # Usage: ./harvest_cv.sh [OPTIONS]
 # Options:
 #   -h, --help                Show help documentation
 #   -t, --tailor <FILE|URL>   Tailor CV specifically to a job description file/URL
-#   -p, --pdf                 Force immediate headless PDF rendering
+#   -p, --pdf                 Force automated headless PDF export (cv_en.pdf / cv_pl.pdf)
 #   -d, --diff                Generate visual experience diff log (harvest_diff.log)
 #   -e, --encrypt-mode <TYPE> Encryption mode: aes (OpenSSL, default) or gpg
-#   --gui                     Open customization GUI in browser
-#   -c, --config              Reconfigure persistent cloud sync settings
+#   --gui                     Open customization GUI in Google Chrome to set themes/RODO options
+#   -c, --config              Reconfigure GitHub token & private cloud sync options
 # ==============================================================================
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+INPUT_DIR="${SCRIPT_DIR}/input"
 OUTPUT_DIR="${SCRIPT_DIR}/output"
+ARCHIVE_DIR="${SCRIPT_DIR}/archives"
 CONFIG_FILE="${SCRIPT_DIR}/.vltimate_config.env"
 PDF_CUSTOM_FILE="${SCRIPT_DIR}/.pdf_customization.json"
 DIFF_LOG_FILE="${SCRIPT_DIR}/harvest_diff.log"
 VAULT_DIR="${SCRIPT_DIR}/.vault_tmp"
 
 SYSTEM_PROMPT_FILE="${SCRIPT_DIR}/cv_harvester_system_prompt.md"
-RAW_PROFILE_FILE="${SCRIPT_DIR}/raw_technical_profile.md"
-RAW_PROFILE_OLD="${SCRIPT_DIR}/.raw_technical_profile.old"
-CV_EN_FILE="${SCRIPT_DIR}/cv_en.html"
-CV_PL_FILE="${SCRIPT_DIR}/cv_pl.html"
+TEMPLATE_FILE="${SCRIPT_DIR}/cv_template.html"
+
+# Assets paths inside input/output subdirectories
+OUTPUT_PROFILE="${OUTPUT_DIR}/raw_technical_profile.md"
+INPUT_PROFILE="${INPUT_DIR}/raw_technical_profile.md"
+OUTPUT_CV_HTML="${OUTPUT_DIR}/cv.html"
 
 ENCRYPTED_ARCHIVE="${SCRIPT_DIR}/personal_data.tar.gz.enc"
 PLAIN_ARCHIVE="${SCRIPT_DIR}/personal_data.tar.gz"
@@ -42,7 +46,7 @@ RECONFIG="false"
 # ------------------------------------------------------------------------------
 show_help() {
     cat <<EOF
-Vltimate CV Scraper v2.0 - Technical Intelligence Harvester & ATS Engine
+Vltimate CV Scraper v2.1 - Technical Intelligence Harvester & ATS Engine
 
 USAGE:
   ./harvest_cv.sh [OPTIONS]
@@ -78,12 +82,12 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "======================================================================"
-echo "🚀 Vltimate CV Scraper v2.0"
+echo "🚀 Vltimate CV Scraper v2.1"
 echo "Working Directory: ${SCRIPT_DIR}"
 echo "======================================================================"
 
 # ------------------------------------------------------------------------------
-# STEP 0: System Dependency Verification
+# STEP 0: System Dependency Verification & Subdirectory Tree Init
 # ------------------------------------------------------------------------------
 check_dependencies() {
     local missing=()
@@ -111,12 +115,10 @@ check_dependencies() {
 }
 
 check_dependencies
-mkdir -p "${OUTPUT_DIR}"
+mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}" "${ARCHIVE_DIR}"
 
-# Backup old profile for diff tracking if present
-if [[ -f "${RAW_PROFILE_FILE}" ]]; then
-    cp -f "${RAW_PROFILE_FILE}" "${RAW_PROFILE_OLD}"
-fi
+# Remove any legacy standalone top-level html/pdf files to keep directory clean
+rm -f "${SCRIPT_DIR}/cv_en.html" "${SCRIPT_DIR}/cv_pl.html" "${SCRIPT_DIR}/cv_en.pdf" "${SCRIPT_DIR}/cv_pl.pdf" "${SCRIPT_DIR}/raw_technical_profile.md"
 
 # ------------------------------------------------------------------------------
 # STEP 1: Customization Memory & GUI Trigger
@@ -135,9 +137,9 @@ if [[ "${OPEN_GUI}" == "true" || ! -f "${PDF_CUSTOM_FILE}" ]]; then
 EOF
     echo "💾 Saved customization preferences to ${PDF_CUSTOM_FILE}"
 
-    if [[ "${OPEN_GUI}" == "true" ]]; then
+    if [[ "${OPEN_GUI}" == "true" && -f "${OUTPUT_CV_HTML}" ]]; then
         echo "🌐 Opening customization GUI in browser..."
-        google-chrome-stable "file://${CV_EN_FILE}" &>/dev/null &
+        google-chrome-stable "file://${OUTPUT_CV_HTML}" &>/dev/null &
     fi
 fi
 
@@ -182,7 +184,6 @@ fi
 
 # Autonomous Creation & Syncing of Public Code Repository (Never asking user!)
 if [[ -n "${GITHUB_USER}" && -n "${GITHUB_TOKEN}" ]]; then
-    # Auto-create public repo if not existing
     curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
          -d "{\"name\":\"${PUBLIC_REPO}\",\"private\":false}" \
          "https://api.github.com/user/repos" &>/dev/null || true
@@ -215,7 +216,7 @@ if [[ "${CLOUD_SYNC_ENABLED}" == "true" && -n "${GITHUB_USER}" && -n "${GITHUB_T
 fi
 
 # ------------------------------------------------------------------------------
-# STEP 4: Auto-detect & Decrypt Results
+# STEP 4: Auto-detect, Decrypt & Subdirectory Snapshot Lifecycle
 # ------------------------------------------------------------------------------
 if [[ -f "${ENCRYPTED_ARCHIVE}" ]]; then
     echo "🔐 Encrypted personal archive detected: ${ENCRYPTED_ARCHIVE}"
@@ -225,11 +226,11 @@ if [[ -f "${ENCRYPTED_ARCHIVE}" ]]; then
 
     TEMP_TAR="$(mktemp --suffix=.tar.gz)"
     if openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 -in "${ENCRYPTED_ARCHIVE}" -out "${TEMP_TAR}" -pass pass:"${DECRYPT_PASS}" 2>/dev/null; then
-        echo "🔓 Archive decrypted successfully! Unpacking prior technical data..."
+        echo "🔓 Archive decrypted successfully! Unpacking data tree..."
         tar -xzf "${TEMP_TAR}" -C "${SCRIPT_DIR}"
         rm -f "${TEMP_TAR}"
     elif gpg --decrypt --batch --passphrase "${DECRYPT_PASS}" "${ENCRYPTED_ARCHIVE}" > "${TEMP_TAR}" 2>/dev/null; then
-        echo "🔓 GPG Archive decrypted successfully! Unpacking prior technical data..."
+        echo "🔓 GPG Archive decrypted successfully! Unpacking data tree..."
         tar -xzf "${TEMP_TAR}" -C "${SCRIPT_DIR}"
         rm -f "${TEMP_TAR}"
     else
@@ -242,6 +243,17 @@ elif [[ -f "${PLAIN_ARCHIVE}" ]]; then
     tar -xzf "${PLAIN_ARCHIVE}" -C "${SCRIPT_DIR}"
 fi
 
+# Snapshot & Input Subdirectory Rotation
+TIMESTAMP="$(date +'%Y-%m-%d_%H%M%S')"
+SNAPSHOT_FILE="${ARCHIVE_DIR}/snapshot_${TIMESTAMP}.tar.gz"
+
+if [[ -f "${OUTPUT_PROFILE}" || -f "${INPUT_PROFILE}" ]]; then
+    echo "📦 Creating timestamped snapshot archive: ${SNAPSHOT_FILE}"
+    tar -czf "${SNAPSHOT_FILE}" -C "${SCRIPT_DIR}" "input" "output" 2>/dev/null || true
+    echo "🔄 Rotating output data into input/ subdirectory for baseline building..."
+    cp -rf "${OUTPUT_DIR}"/* "${INPUT_DIR}/" 2>/dev/null || true
+fi
+
 # ------------------------------------------------------------------------------
 # STEP 5: Execute agy Intelligence Harvesting & JD Tailoring
 # ------------------------------------------------------------------------------
@@ -250,7 +262,7 @@ if [[ ! -f "${SYSTEM_PROMPT_FILE}" ]]; then
     exit 1
 fi
 
-PROMPT="Read '${SYSTEM_PROMPT_FILE}' and '${RAW_PROFILE_FILE}'."
+PROMPT="Read '${SYSTEM_PROMPT_FILE}' and '${INPUT_PROFILE}'."
 
 if [[ -n "${TAILOR_TARGET}" ]]; then
     echo "🎯 Job Description Tailoring Mode Enabled for: ${TAILOR_TARGET}"
@@ -259,40 +271,35 @@ if [[ -n "${TAILOR_TARGET}" ]]; then
     else
         JD_CONTENT="$(curl -s "${TAILOR_TARGET}" || echo "${TAILOR_TARGET}")"
     fi
-    PROMPT="${PROMPT} Tailor the resume summary, keyword tags, and experience bullet points specifically for this Job Description: ${JD_CONTENT}."
+    PROMPT="${PROMPT} Tailor the summary, keyword badges, and experience bullet points specifically for this Job Description: ${JD_CONTENT}."
 fi
 
-PROMPT="${PROMPT} Perform harvesting across system, shell history, git repos, and GitHub profile. Update '${RAW_PROFILE_FILE}', '${CV_EN_FILE}', and '${CV_PL_FILE}'. Save identical copies into '${OUTPUT_DIR}'."
+PROMPT="${PROMPT} Perform harvesting across system, shell history, git repos, and GitHub profile. Save updated knowledge base into '${OUTPUT_PROFILE}' and generate unified bilingual interactive HTML resume into '${OUTPUT_CV_HTML}' (containing both English and Polish pages, theme picker, and RODO selector)."
 
 echo "======================================================================"
 echo "⚡ Harvesting technical intelligence with agy..."
 echo "======================================================================"
 agy --dangerously-skip-permissions --print "${PROMPT}"
 
-# Synchronize fallback copies
-cp -f "${RAW_PROFILE_FILE}" "${OUTPUT_DIR}/raw_technical_profile.md" 2>/dev/null || true
-if [[ -f "${CV_EN_FILE}" ]]; then cp -f "${CV_EN_FILE}" "${OUTPUT_DIR}/cv_en.html" 2>/dev/null || true; fi
-if [[ -f "${CV_PL_FILE}" ]]; then cp -f "${CV_PL_FILE}" "${OUTPUT_DIR}/cv_pl.html" 2>/dev/null || true; fi
-
 # ------------------------------------------------------------------------------
 # STEP 6: Headless PDF Generation & Visual Diff Tracking
 # ------------------------------------------------------------------------------
-echo "======================================================================"
-echo "🖨️ Rendering pixel-perfect headless PDFs..."
-echo "======================================================================"
-google-chrome-stable --headless --disable-gpu --print-to-pdf="${SCRIPT_DIR}/cv_en.pdf" "file://${CV_EN_FILE}" &>/dev/null || true
-google-chrome-stable --headless --disable-gpu --print-to-pdf="${SCRIPT_DIR}/cv_pl.pdf" "file://${CV_PL_FILE}" &>/dev/null || true
-if [[ -f "${SCRIPT_DIR}/cv_en.pdf" ]]; then cp -f "${SCRIPT_DIR}/cv_en.pdf" "${OUTPUT_DIR}/cv_en.pdf"; fi
-if [[ -f "${SCRIPT_DIR}/cv_pl.pdf" ]]; then cp -f "${SCRIPT_DIR}/cv_pl.pdf" "${OUTPUT_DIR}/cv_pl.pdf"; fi
-echo "✅ Rendered cv_en.pdf & cv_pl.pdf"
+if [[ -f "${OUTPUT_CV_HTML}" ]]; then
+    echo "======================================================================"
+    echo "🖨️ Rendering pixel-perfect headless PDFs..."
+    echo "======================================================================"
+    google-chrome-stable --headless --disable-gpu --print-to-pdf="${OUTPUT_DIR}/cv_en.pdf" "file://${OUTPUT_CV_HTML}" &>/dev/null || true
+    google-chrome-stable --headless --disable-gpu --print-to-pdf="${OUTPUT_DIR}/cv_pl.pdf" "file://${OUTPUT_CV_HTML}" &>/dev/null || true
+    echo "✅ Rendered ${OUTPUT_DIR}/cv_en.pdf & ${OUTPUT_DIR}/cv_pl.pdf"
+fi
 
-if [[ "${ENABLE_DIFF}" == "true" || -f "${RAW_PROFILE_OLD}" ]]; then
+if [[ "${ENABLE_DIFF}" == "true" && -f "${INPUT_PROFILE}" && -f "${OUTPUT_PROFILE}" ]]; then
     echo "======================================================================"
     echo "📊 Visual Experience Diff Tracking..."
     echo "======================================================================"
     {
         echo "=== Vltimate CV Scraper Diff Report: $(date -u +'%Y-%m-%dT%H:%M:%SZ') ==="
-        diff -u "${RAW_PROFILE_OLD}" "${RAW_PROFILE_FILE}" || true
+        diff -u "${INPUT_PROFILE}" "${OUTPUT_PROFILE}" || true
     } > "${DIFF_LOG_FILE}"
     echo "✅ Diff report saved to ${DIFF_LOG_FILE}"
 fi
@@ -317,8 +324,8 @@ if [[ "${PACK_CHOICE}" =~ ^[Yy](es)?$ ]]; then
         exit 1
     fi
 
-    echo "📦 Packing profile, resume HTML, PDFs, and output files..."
-    tar -czf "${PLAIN_ARCHIVE}" -C "${SCRIPT_DIR}" "raw_technical_profile.md" "cv_en.html" "cv_pl.html" "cv_en.pdf" "cv_pl.pdf" "output"
+    echo "📦 Packing input/, output/, and archives/ subdirectories..."
+    tar -czf "${PLAIN_ARCHIVE}" -C "${SCRIPT_DIR}" "input" "output" "archives"
 
     if [[ "${ENCRYPT_MODE}" == "gpg" ]]; then
         echo "🔒 Encrypting archive with GPG..."
@@ -363,8 +370,8 @@ EOF
         echo "✅ Synced to private GitHub repo: ${GITHUB_USER}/${VAULT_REPO}"
     fi
 
-    echo "🧹 Executing security cleanup: Removing unencrypted plain files..."
-    rm -rf "${RAW_PROFILE_FILE}" "${CV_EN_FILE}" "${CV_PL_FILE}" "${SCRIPT_DIR}/cv_en.pdf" "${SCRIPT_DIR}/cv_pl.pdf" "${OUTPUT_DIR}"
+    echo "🧹 Executing security cleanup: Removing unencrypted plain subdirectories..."
+    rm -rf "${INPUT_DIR}" "${OUTPUT_DIR}" "${ARCHIVE_DIR}"
 
     echo "======================================================================"
     echo "✅ Personal data successfully packed, encrypted, and cleaned!"
@@ -375,5 +382,5 @@ else
 fi
 
 echo "======================================================================"
-echo "🎉 Vltimate CV Scraper v2.0 workflow complete!"
+echo "🎉 Vltimate CV Scraper v2.1 workflow complete!"
 echo "======================================================================"
