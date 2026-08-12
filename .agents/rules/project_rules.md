@@ -64,3 +64,6 @@
 - **Log File Viewing**: Startup log path output is hidden by default; execution logs are viewable via `-l` / `--log` flag.
 - **User-Friendly Interrupted Run Recovery**: Recovery prompts use clean human language ("Resume previous session") without displaying internal technical checkpoint strings.
 - **Silent Snapshot Archive Logging**: Snapshot archive creation is logged to `./logs/` silently and only printed to console output when `--verbose` (`-v`) is enabled.
+
+## 15. Font Rendering & Universal Glyph Fallbacks
+- **Single-Width Universal Unicode Glyphs**: All CLI banners, status indicators, and prompts use universal single-width glyphs (`✦`, `⚡`, `◈`, `◆`, `◇`, `✔`, `✘`, `▲`, `ℹ`, `🗝`, `❖`) instead of complex multi-byte color emojis (`🌌`, `🔮`, `💎`, `🔒`, `✨`, `🎨`, `🔑`), guaranteeing 100% crisp rendering across all Linux terminal fonts without broken wireframes or split rectangle placeholders.
