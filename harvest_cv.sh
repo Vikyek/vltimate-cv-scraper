@@ -3,7 +3,7 @@
 # Vltimate CV Scraper v3.5 (Production Master)
 # Usage: ./harvest_cv.sh [OPTIONS]
 # Changes in v3.5:
-#   - Universal Unicode Glyphs: Replaced multi-byte color emojis with rock-solid single-width glyphs (✦, ⚡, ◈, ◆, ✔, ✘, ▲, ℹ)
+#   - Rich Color Emojis Restored: 🌌, 🔮, 💎, 🔒, ✨, 🎨, 🔑, 📜, 🔐, ✍️
 #   - Automatic Customization Pick-Up: Auto-detects & moves downloaded GUI configs from ~/Downloads/
 #   - Dynamic Source Summary: Compact, glowing summary instead of repetitive lines
 #   - Log Path & Flag: Log path hidden from startup; accessible via -l / --log flag
@@ -92,7 +92,7 @@ LOG_FILE="${LOG_DIR}/harvest_$(date +'%Y-%m-%d_%H%M%S').log"
 
 print_banner() {
     echo -e "${C_CYAN}┌────────────────────────────────────────────────────────────────────────┐${C_RESET}"
-    echo -e "${C_CYAN}│  ${C_BOLD}${C_MAGENTA}✦ VLTIMATE CV SCRAPER v3.5${C_RESET}${C_CYAN} — Technical Intelligence & ATS Engine │${C_RESET}"
+    echo -e "${C_CYAN}│  ${C_BOLD}${C_MAGENTA}🌌 VLTIMATE CV SCRAPER v3.5${C_RESET}${C_CYAN} — Technical Intelligence & ATS Engine  │${C_RESET}"
     echo -e "${C_CYAN}│  ${C_PINK}Autonomous Scraping • Multi-Shell Mining • Cross-Site Discovery${C_RESET}${C_CYAN}      │${C_RESET}"
     echo -e "${C_CYAN}└────────────────────────────────────────────────────────────────────────┘${C_RESET}"
 }
@@ -106,33 +106,33 @@ sanitize_log_msg() {
 log_info() {
     local timestamp="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
     local clean_msg="$(sanitize_log_msg "$*")"
-    echo "[${timestamp}] ℹ ${clean_msg}" >> "${LOG_FILE}"
+    echo "[${timestamp}] ℹ️  ${clean_msg}" >> "${LOG_FILE}"
     if [[ "${VERBOSE}" == "true" ]]; then
-        echo -e "${C_DIM}[${timestamp}]${C_RESET} ${C_CYAN}ℹ ${clean_msg}${C_RESET}"
+        echo -e "${C_DIM}[${timestamp}]${C_RESET} ${C_CYAN}ℹ️  ${clean_msg}${C_RESET}"
     else
-        echo -e "${C_CYAN}ℹ ${clean_msg}${C_RESET}"
+        echo -e "${C_CYAN}ℹ️  ${clean_msg}${C_RESET}"
     fi
 }
 
 log_warn() {
     local timestamp="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
     local clean_msg="$(sanitize_log_msg "$*")"
-    echo "[${timestamp}] ▲ ${clean_msg}" >> "${LOG_FILE}"
+    echo "[${timestamp}] ⚠️  ${clean_msg}" >> "${LOG_FILE}"
     if [[ "${VERBOSE}" == "true" ]]; then
-        echo -e "${C_DIM}[${timestamp}]${C_RESET} ${C_GOLD}▲ ${clean_msg}${C_RESET}"
+        echo -e "${C_DIM}[${timestamp}]${C_RESET} ${C_GOLD}⚠️  ${clean_msg}${C_RESET}"
     else
-        echo -e "${C_GOLD}▲ ${clean_msg}${C_RESET}"
+        echo -e "${C_GOLD}⚠️  ${clean_msg}${C_RESET}"
     fi
 }
 
 log_err() {
     local timestamp="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
     local clean_msg="$(sanitize_log_msg "$*")"
-    echo "[${timestamp}] ✘ ${clean_msg}" >> "${LOG_FILE}"
+    echo "[${timestamp}] ❌ ${clean_msg}" >> "${LOG_FILE}"
     if [[ "${VERBOSE}" == "true" ]]; then
-        echo -e "${C_DIM}[${timestamp}]${C_RESET} ${C_RED}✘ ${clean_msg}${C_RESET}"
+        echo -e "${C_DIM}[${timestamp}]${C_RESET} ${C_RED}❌ ${clean_msg}${C_RESET}"
     else
-        echo -e "${C_RED}✘ ${clean_msg}${C_RESET}"
+        echo -e "${C_RED}❌ ${clean_msg}${C_RESET}"
     fi
 }
 
@@ -146,18 +146,18 @@ save_checkpoint() {
 }
 EOF
     local timestamp="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-    echo "[${timestamp}] ℹ Checkpoint saved: '${state}'" >> "${LOG_FILE}"
+    echo "[${timestamp}] ℹ️  Checkpoint saved: '${state}'" >> "${LOG_FILE}"
     if [[ "${VERBOSE}" == "true" ]]; then
-        echo -e "${C_DIM}[${timestamp}]${C_RESET} ${C_VIOLET}◈ Checkpoint saved: '${state}'${C_RESET}"
+        echo -e "${C_DIM}[${timestamp}]${C_RESET} ${C_VIOLET}💎 Checkpoint saved: '${state}'${C_RESET}"
     fi
 }
 
 clear_checkpoint() {
     rm -f "${CHECKPOINT_FILE}" "${AUDIT_FILE}"
     local timestamp="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-    echo "[${timestamp}] ℹ Checkpoint cleared." >> "${LOG_FILE}"
+    echo "[${timestamp}] ℹ️  Checkpoint cleared." >> "${LOG_FILE}"
     if [[ "${VERBOSE}" == "true" ]]; then
-        echo -e "${C_DIM}[${timestamp}]${C_RESET} ${C_VIOLET}◈ Checkpoint cleared.${C_RESET}"
+        echo -e "${C_DIM}[${timestamp}]${C_RESET} ${C_VIOLET}💎 Checkpoint cleared.${C_RESET}"
     fi
 }
 
@@ -180,7 +180,7 @@ search_and_move_customization() {
     if [[ -n "${candidate}" && -f "${candidate}" ]]; then
         mv -f "${candidate}" "${PDF_CUSTOM_FILE}"
         chmod 600 "${PDF_CUSTOM_FILE}"
-        log_info "✦ Automatically moved customization config: '${candidate}' -> './config/pdf_customization.json'"
+        log_info "✨ Automatically moved customization config: '${candidate}' -> './config/pdf_customization.json'"
         return 0
     fi
     return 1
@@ -311,14 +311,14 @@ done
 if [[ "${VIEW_LOG}" == "true" ]]; then
     LATEST_LOG="$(ls -t "${LOG_DIR}"/harvest_*.log 2>/dev/null | head -n 1 || echo '')"
     if [[ -n "${LATEST_LOG}" && -f "${LATEST_LOG}" ]]; then
-        echo -e "${C_CYAN}◈ Opening latest execution log file: '${LATEST_LOG}'...${C_RESET}"
+        echo -e "${C_CYAN}📜 Opening latest execution log file: '${LATEST_LOG}'...${C_RESET}"
         if command -v micro &>/dev/null; then
             micro "${LATEST_LOG}"
         else
             less -R "${LATEST_LOG}"
         fi
     else
-        echo -e "${C_RED}✘ No log files found in '${LOG_DIR}'.${C_RESET}"
+        echo -e "${C_RED}❌ No log files found in '${LOG_DIR}'.${C_RESET}"
     fi
     exit 0
 fi
@@ -335,7 +335,7 @@ if [[ "${VIEW_DB}" == "true" ]]; then
     fi
 
     if [[ -n "${DB_TARGET}" ]]; then
-        echo -e "${C_CYAN}◈ Opening synced technical knowledge base: '${DB_TARGET}'...${C_RESET}"
+        echo -e "${C_CYAN}📜 Opening synced technical knowledge base: '${DB_TARGET}'...${C_RESET}"
         if command -v micro &>/dev/null; then
             micro "${DB_TARGET}"
         else
@@ -385,7 +385,7 @@ RESUME_STATE=""
 if [[ -f "${CHECKPOINT_FILE}" ]]; then
     LAST_STATE="$(grep '"state"' "${CHECKPOINT_FILE}" | cut -d'"' -f4 || echo '')"
     echo ""
-    log_warn "✦ Interrupted session detected from previous run!"
+    log_warn "✨ Interrupted session detected from previous run!"
     echo "  1) Resume previous session"
     echo "  2) Start fresh run"
     read -r -p "Select recovery option [1/2]: " RECOVERY_CHOICE || RECOVERY_CHOICE="2"
@@ -437,22 +437,22 @@ discover_dynamic_sources() {
     for d in "${HOME}/.local/bin" "${HOME}/bin" "${HOME}/Scripts" "/opt"; do
         if [[ -d "$d" ]]; then
             SCRIPT_COUNT=$((SCRIPT_COUNT + 1))
-            echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] ℹ Dynamic source identified: Script Directory '$d'" >> "${LOG_FILE}"
+            echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] ℹ️  Dynamic source identified: Script Directory '$d'" >> "${LOG_FILE}"
         fi
     done
     
     while IFS= read -r gitdir; do
         if [[ -n "$gitdir" ]]; then
             local repo_path="$(dirname "$gitdir")"
-            echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] ℹ Dynamic source identified: Git Repository '${repo_path}'" >> "${LOG_FILE}"
+            echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] ℹ️  Dynamic source identified: Git Repository '${repo_path}'" >> "${LOG_FILE}"
             REPO_COUNT=$((REPO_COUNT + 1))
             if [[ $REPO_COUNT -ge 15 ]]; then break; fi
         fi
     done < <(find "${HOME}" -maxdepth 3 -name ".git" 2>/dev/null || true)
     
-    log_info "✦ Dynamic Intelligence Discovery: Found ${REPO_COUNT} Local Git Repos, ${SCRIPT_COUNT} Binary Directories, and Shell Environments"
+    log_info "✨ Dynamic Intelligence Discovery: Found ${REPO_COUNT} Local Git Repos, ${SCRIPT_COUNT} Binary Directories, and Shell Environments"
     if [[ $EXTRA_COUNT -gt 0 ]]; then
-        log_info "✦ Manual Targets Added: ${EXTRA_COUNT} custom paths/URLs ingested"
+        log_info "✨ Manual Targets Added: ${EXTRA_COUNT} custom paths/URLs ingested"
     fi
 }
 
@@ -466,7 +466,7 @@ pickup_downloaded_customization
 
 if [[ -f "${PDF_CUSTOM_FILE}" && "${OPEN_GUI}" != "true" ]]; then
     log_info "Existing layout customization found in './config/pdf_customization.json'."
-    read -r -p "❖ Re-open Chrome HTML GUI to change layout options? [y/N]: " OPEN_GUI_PROMPT || OPEN_GUI_PROMPT="n"
+    read -r -p "🎨 Re-open Chrome HTML GUI to change layout options? [y/N]: " OPEN_GUI_PROMPT || OPEN_GUI_PROMPT="n"
     if [[ "${OPEN_GUI_PROMPT}" =~ ^[Yy](es)?$ ]]; then
         OPEN_GUI="true"
     fi
@@ -502,7 +502,7 @@ EOF
         log_warn "No HTML resume or template found to open. Skipping GUI."
     fi
     echo ""
-    read -r -p "❖ Adjust options in Chrome, click 'Save Config', then press Enter to continue: " _UNUSED || true
+    read -r -p "🎨 Adjust options in Chrome, click 'Save Config', then press Enter to continue: " _UNUSED || true
     
     # Auto-pick up downloaded customization config or enter fallback retry loop
     while true; do
@@ -511,7 +511,7 @@ EOF
         else
             echo ""
             echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
-            log_warn "▲ No new exported customization config file detected in ~/Downloads/!"
+            log_warn "⚠️ No new exported customization config file detected in ~/Downloads/!"
             echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
             echo "Instructions: In Chrome, click 'Save Config' to export 'pdf_customization.json'."
             echo ""
@@ -528,7 +528,7 @@ EOF
                     sleep 0.5
                     ;;
                 2)
-                    read -r -p "❖ Enter file or directory path: " MANUAL_PATH || MANUAL_PATH=""
+                    read -r -p "📁 Enter file or directory path: " MANUAL_PATH || MANUAL_PATH=""
                     if [[ -n "${MANUAL_PATH}" ]]; then
                         if search_and_move_customization "${MANUAL_PATH}"; then
                             break
@@ -580,7 +580,7 @@ EOF
 if [[ "${CLOUD_SYNC_ENABLED}" == "true" && -z "${GITHUB_TOKEN:-}" && "${RECONFIG}" != "true" ]]; then
     echo ""
     log_warn "Private Cloud Sync is enabled, but no GitHub Personal Access Token (PAT) is configured!"
-    GITHUB_TOKEN="$(read_secret "🗝 Enter your GitHub Personal Access Token (PAT): ")"
+    GITHUB_TOKEN="$(read_secret "🔑 Enter your GitHub Personal Access Token (PAT): ")"
     if [[ -n "${GITHUB_TOKEN}" ]]; then
         save_config
     else
@@ -599,12 +599,12 @@ elif [[ "${RECONFIG}" == "true" || ! -f "${CONFIG_FILE}" ]]; then
         fi
 
         if [[ -z "${GITHUB_TOKEN:-}" ]]; then
-            GITHUB_TOKEN="$(read_secret "🗝 Enter your GitHub Personal Access Token (PAT): ")"
+            GITHUB_TOKEN="$(read_secret "🔑 Enter your GitHub Personal Access Token (PAT): ")"
         else
             log_info "Detected GitHub Personal Access Token from environment variable."
         fi
 
-        read -r -p "◆ Enter Private Vault Repo Name [default: ${VAULT_REPO}]: " INPUT_REPO || INPUT_REPO=""
+        read -r -p "📦 Enter Private Vault Repo Name [default: ${VAULT_REPO}]: " INPUT_REPO || INPUT_REPO=""
         if [[ -n "${INPUT_REPO}" ]]; then VAULT_REPO="${INPUT_REPO}"; fi
 
         save_config
@@ -642,7 +642,7 @@ if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" ]]; then
         if [[ -n "${DECRYPT_PASS:-}" ]]; then
             log_info "Using decryption password from environment variable."
         else
-            DECRYPT_PASS="$(read_secret "🗝 Enter decryption password: ")"
+            DECRYPT_PASS="$(read_secret "🔑 Enter decryption password: ")"
         fi
 
         TEMP_TAR="$(mktemp --suffix=.tar.gz)"
@@ -669,9 +669,9 @@ if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" ]]; then
 
     if [[ -f "${OUTPUT_PROFILE}" || -f "${INPUT_PROFILE}" ]]; then
         local_ts="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-        echo "[${local_ts}] ℹ Creating snapshot archive: './archives/snapshot_${TIMESTAMP}.tar.gz'" >> "${LOG_FILE}"
+        echo "[${local_ts}] ℹ️  Creating snapshot archive: './archives/snapshot_${TIMESTAMP}.tar.gz'" >> "${LOG_FILE}"
         if [[ "${VERBOSE}" == "true" ]]; then
-            echo -e "${C_DIM}[${local_ts}]${C_RESET} ${C_VIOLET}◈ Snapshot archive created: './archives/snapshot_${TIMESTAMP}.tar.gz'${C_RESET}"
+            echo -e "${C_DIM}[${local_ts}]${C_RESET} ${C_VIOLET}💎 Snapshot archive created: './archives/snapshot_${TIMESTAMP}.tar.gz'${C_RESET}"
         fi
         tar -czf "${SNAPSHOT_FILE}" -C "${SCRIPT_DIR}" "input" "output" 2>/dev/null || true
         cp -rf "${OUTPUT_DIR}"/* "${INPUT_DIR}/" 2>/dev/null || true
@@ -758,7 +758,7 @@ if [[ -f "${OUTPUT_PROFILE}" ]]; then
 
     if [[ "${HAS_CONFLICTS}" == "true" ]]; then
         echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
-        log_warn "▲ CONFLICT DETECTED IN HARVESTED TECHNICAL DATA!"
+        log_warn "⚠️ CONFLICT DETECTED IN HARVESTED TECHNICAL DATA!"
         echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
         cat "${AUDIT_FILE}"
         echo -e "${C_CYAN}────────────────────────────────────────────────────────────────────────${C_RESET}"
@@ -772,7 +772,7 @@ if [[ -f "${OUTPUT_PROFILE}" ]]; then
                 
                 if grep -q '"has_conflicts": false' "${AUDIT_FILE}" 2>/dev/null || grep -q '"has_conflicts":false' "${AUDIT_FILE}" 2>/dev/null; then
                     HAS_CONFLICTS="false"
-                    log_info "✔ Conflict successfully resolved!"
+                    log_info "✅ Conflict successfully resolved!"
                 else
                     log_warn "Re-audit indicates lingering conflicts. Please provide additional resolution detail."
                 fi
@@ -780,7 +780,7 @@ if [[ -f "${OUTPUT_PROFILE}" ]]; then
         done
     else
         echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
-        log_info "✔ Technical Data Audit Passed: Zero data conflicts or date contradictions detected."
+        log_info "✅ Technical Data Audit Passed: Zero data conflicts or date contradictions detected."
         echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
     fi
 else
@@ -794,7 +794,7 @@ if [[ "${INTERACTIVE_LOOP}" == "true" ]]; then
     while true; do
         echo ""
         echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
-        echo -e "${C_BOLD}${C_MAGENTA}✦ Interactive Refinement Menu (via agy)${C_RESET}"
+        echo -e "${C_BOLD}${C_MAGENTA}✍️ Interactive Refinement Menu (via agy)${C_RESET}"
         echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
         echo "Current harvested profile and HTML resume are ready in './output/'."
         echo "  1) Approve current CV & Profile (Proceed to PDF Export & Encryption)"
@@ -849,7 +849,7 @@ fi
 if [[ "${ENABLE_DIFF}" == "true" && -f "${INPUT_PROFILE}" && -f "${OUTPUT_PROFILE}" ]]; then
     log_info "Visual Experience Diff Tracking..."
     {
-        echo "=== Vltimate CV Scraper Diff Report: $(date -u +'%Y-%m-%dT%H:%M:%SZ') ==="
+        echo "=== Vltimate CV Scraper Diff Report: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
         diff -u "${INPUT_PROFILE}" "${OUTPUT_PROFILE}" || true
     } > "${DIFF_LOG_FILE}"
     log_info "Diff report saved to './harvest_diff.log'"
@@ -859,13 +859,13 @@ fi
 # STEP 8: DEFAULT ENCRYPTION POLICY & SECURITY CLEANUP (Default: YES)
 # ------------------------------------------------------------------------------
 echo ""
-read -r -p "◆ Pack and encrypt personal results now? [Y/n]: " PACK_CHOICE || PACK_CHOICE="Y"
+read -r -p "🔒 Pack and encrypt personal results now? [Y/n]: " PACK_CHOICE || PACK_CHOICE="Y"
 PACK_CHOICE="${PACK_CHOICE:-Y}"
 
 if [[ "${PACK_CHOICE}" =~ ^[Yy](es)?$ ]]; then
     # Interactive encryption method selection if not passed via CLI flag
     if [[ "${ENCRYPT_MODE}" == "aes" ]]; then
-        echo "🗝 Select encryption method:"
+        echo "🔐 Select encryption method:"
         echo "  1) OpenSSL AES-256 (default)"
         echo "  2) GPG key encryption"
         read -r -p "Selection [1/2]: " METHOD_CHOICE || METHOD_CHOICE="1"
@@ -878,8 +878,8 @@ if [[ "${PACK_CHOICE}" =~ ^[Yy](es)?$ ]]; then
         log_info "Using encryption password from environment variable."
         ENCRYPT_PASS1="${ENCRYPT_PASS}"
     else
-        ENCRYPT_PASS1="$(read_secret "🗝 Enter custom encryption password: ")"
-        ENCRYPT_PASS2="$(read_secret "🗝 Re-enter encryption password: ")"
+        ENCRYPT_PASS1="$(read_secret "🔑 Enter custom encryption password: ")"
+        ENCRYPT_PASS2="$(read_secret "🔑 Re-enter encryption password: ")"
 
         if [[ "${ENCRYPT_PASS1}" != "${ENCRYPT_PASS2}" || -z "${ENCRYPT_PASS1}" ]]; then
             log_err "Invalid password or mismatch! Aborting encryption."
