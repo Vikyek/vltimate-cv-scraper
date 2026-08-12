@@ -161,23 +161,37 @@ clear_checkpoint() {
 }
 
 # ------------------------------------------------------------------------------
-# AUTOMATIC DOWNLOADED CUSTOMIZATION PICK-UP & AUTO-MOVE
+# AUTOMATIC DOWNLOADED CUSTOMIZATION PICK-UP & AUTO-MOVE (NO TRASH FILES)
 # ------------------------------------------------------------------------------
-pickup_downloaded_customization() {
-    local found_file=""
-    # Search for downloaded customization file in ~/Downloads/
-    for f in "${HOME}/Downloads/pdf_customization"* "${HOME}/Downloads/.pdf_customization"*; do
-        if [[ -f "$f" ]]; then
-            found_file="$f"
-        fi
-    done
+search_and_move_customization() {
+    local search_path="$1"
+    local candidate=""
 
-    if [[ -n "${found_file}" ]]; then
-        cp -f "${found_file}" "${PDF_CUSTOM_FILE}"
-        chmod 600 "${PDF_CUSTOM_FILE}"
-        rm -f "${found_file}"
-        log_info "✨ Automatically picked up updated customization config from Downloads!"
+    # Expand tilde ~ if passed
+    search_path="${search_path/#\~/$HOME}"
+
+    if [[ -f "${search_path}" ]]; then
+        candidate="${search_path}"
+    elif [[ -d "${search_path}" ]]; then
+        candidate="$(find "${search_path}" -maxdepth 2 \( -name "pdf_customization*.json" -o -name ".pdf_customization*.json" \) 2>/dev/null | head -n 1 || echo '')"
     fi
+
+    if [[ -n "${candidate}" && -f "${candidate}" ]]; then
+        mv -f "${candidate}" "${PDF_CUSTOM_FILE}"
+        chmod 600 "${PDF_CUSTOM_FILE}"
+        log_info "✨ Automatically moved customization config: '${candidate}' -> './config/pdf_customization.json'"
+        return 0
+    fi
+    return 1
+}
+
+pickup_downloaded_customization() {
+    if search_and_move_customization "${HOME}/Downloads" || \
+       search_and_move_customization "${SCRIPT_DIR}" || \
+       search_and_move_customization "${HOME}/Desktop"; then
+        return 0
+    fi
+    return 1
 }
 
 # ------------------------------------------------------------------------------
@@ -489,8 +503,49 @@ EOF
     echo ""
     read -r -p "🎨 Adjust options in Chrome, click 'Save Config', then press Enter to continue: " _UNUSED || true
     
-    # Auto-pick up downloaded customization config from Downloads after GUI closes
-    pickup_downloaded_customization
+    # Auto-pick up downloaded customization config or enter fallback retry loop
+    while true; do
+        if pickup_downloaded_customization; then
+            break
+        else
+            echo ""
+            echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
+            log_warn "⚠️ No new exported customization config file detected in ~/Downloads/!"
+            echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
+            echo "Instructions: In Chrome, click 'Save Config' to export 'pdf_customization.json'."
+            echo ""
+            echo "Options:"
+            echo "  1) Retry auto-detecting in ~/Downloads/ (if download was delayed)"
+            echo "  2) Enter file path or directory path manually"
+            echo "  3) Continue using current/default customization config"
+            read -r -p "Select option [1-3] (Default: 1): " FALLBACK_CHOICE || FALLBACK_CHOICE="1"
+            FALLBACK_CHOICE="${FALLBACK_CHOICE:-1}"
+
+            case "${FALLBACK_CHOICE}" in
+                1)
+                    log_info "Re-checking ~/Downloads/..."
+                    sleep 0.5
+                    ;;
+                2)
+                    read -r -p "📁 Enter file or directory path: " MANUAL_PATH || MANUAL_PATH=""
+                    if [[ -n "${MANUAL_PATH}" ]]; then
+                        if search_and_move_customization "${MANUAL_PATH}"; then
+                            break
+                        else
+                            log_warn "Could not find any 'pdf_customization*.json' at '${MANUAL_PATH}'."
+                        fi
+                    fi
+                    ;;
+                3)
+                    log_info "Continuing with configuration in './config/pdf_customization.json'."
+                    break
+                    ;;
+                *)
+                    log_warn "Invalid selection. Retrying..."
+                    ;;
+            esac
+        fi
+    done
 fi
 
 # ------------------------------------------------------------------------------
