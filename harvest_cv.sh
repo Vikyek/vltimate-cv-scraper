@@ -868,7 +868,7 @@ if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" || "${RESUM
         exit 1
     fi
 
-    PROMPT="Read '${SYSTEM_PROMPT_FILE}' and '${INPUT_PROFILE}'."
+    PROMPT="Read '${SYSTEM_PROMPT_FILE}', '${INPUT_PROFILE}', and '${TEMPLATE_FILE}'."
 
     if [[ -n "${TAILOR_TARGET}" ]]; then
         log_info "Job Description Tailoring Mode Enabled for: '${TAILOR_TARGET}'"
@@ -888,7 +888,7 @@ if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" || "${RESUM
     PROMPT="${PROMPT} Perform harvesting across system, shell history, git repos, cloud services (gcloud, az, aws, rclone), public registries (Docker Hub, npm, PyPI), and GitHub profile."
     PROMPT="${PROMPT} Perform dynamic heuristic searching to evaluate un-predetermined scrapable places (custom scripts, config dirs, dotfile repos, journals)."
     PROMPT="${PROMPT} When scanning, report each new intelligence source found (e.g. 'Scanning local git repos...', 'Found GitHub repo: <name> [NEW]', 'Scanning shell history...', 'Found loose script: <path> [KNOWN]', 'Scanning online GitHub profile...', 'Found linked profile: <url> [NEW]'). Mark sources as [NEW] if not present in past collected intel, or [KNOWN] if already present."
-    PROMPT="${PROMPT} Save updated knowledge base into '${OUTPUT_PROFILE}' and generate unified bilingual interactive HTML resume into '${OUTPUT_CV_HTML}'."
+    PROMPT="${PROMPT} Save updated knowledge base into '${OUTPUT_PROFILE}' and generate unified bilingual interactive HTML resume into '${OUTPUT_CV_HTML}' using '${TEMPLATE_FILE}' as the base template structure, layout, styles, scripts, and controls."
 
     save_checkpoint "STATE_HARVEST_STARTED"
     if run_with_spinner "Harvesting technical intelligence with agy..." agy --dangerously-skip-permissions --print "${PROMPT}"; then

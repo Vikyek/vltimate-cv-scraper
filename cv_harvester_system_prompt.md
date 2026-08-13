@@ -130,12 +130,19 @@ Compile an unformatted, exhaustive master technical document organized into:
 6. **Languages & Stacks** (C#, C++, Python, Rust, JavaScript, ASP.NET, Node.js, SQL, REST APIs).
 7. **Security, Networking & Privacy** (CISCO CCNA, Goldwarden/Bitwarden SSH, VNC, Monero).
 8. **Work Experience & Official State Certifications** (EE.08, EE.09, Cambridge C1, Microsoft 365, PlayWay reference surname note).
-
 ### Step 5: Unified Interactive HTML CV Generation (`output/cv.html`)
-Generate a single, unified interactive HTML resume file (`output/cv.html`) featuring:
-- **Interactive Control Bar (`no-print`)**: Language switcher button (EN/PL), A4/Fluid view toggle, color theme configurator, GDPR/RODO clause selector, and Print button.
-- **Language-Matched Consent Footers**: The English page (`#cv-english-page`) receives the English GDPR consent footer (`I hereby give consent for my personal data to be processed...`), and the Polish page (`#cv-polish-page`) receives the Polish RODO consent footer (`Wyrażam zgodę na przetwarzanie moich danych osobowych...`). Never display Polish consent text on the English page or vice-versa.
-- **Single-Column ATS Layout**: Linear flow, semantic tags (`<header>`, `<section>`, `<h1>`, `<h2>`, `<ul>`, `<li>`), STAR-K summary blocks, and keyword tag cloud.
+Read 'cv_template.html' and use it as the base structure, layout, styling, and JavaScript logic template. Generate the final resume file (`output/cv.html`) by replacing the template's placeholders with the harvested candidate data.
+You MUST preserve the entire interactive control bar (`no-print`) and all associated JavaScript functions, including:
+- **Language selector tabs**: EN, PL, and Both (EN & PL).
+- **Auto-Translate dropdown** (`custom-lang-select` + `handleCustomLangChange()`).
+- **Density selector dropdown** (Comfortable, Compact 1-page, Spacious).
+- **Palette theme accent selector** (Modern Blue, Purple, Emerald, Charcoal).
+- **View mode toggles** (A4 Sheet, Fluid View).
+- **RODO/GDPR selector** (Universal, Omit).
+- **Save Config button** (`exportCustomizationConfig()`).
+- **Print / Save PDF button** (`window.print()`).
+
+You must also ensure language-matched consent footers are preserved: the English page (`#cv-english-page`) gets the English GDPR consent footer, and the Polish page (`#cv-polish-page`) gets the Polish RODO consent footer. Never display Polish text on the English page or vice-versa.
 
 ---
 
