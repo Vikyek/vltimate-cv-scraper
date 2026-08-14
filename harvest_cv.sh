@@ -1015,6 +1015,10 @@ if [[ "${INTERACTIVE_LOOP}" == "true" ]]; then
                     REVISE_PROMPT="Read '${SYSTEM_PROMPT_FILE}', '${OUTPUT_PROFILE}', and '${OUTPUT_CV_HTML}'. Apply instruction: ${USER_FEEDBACK}. Update '${OUTPUT_PROFILE}' and '${OUTPUT_CV_HTML}'."
                     run_with_spinner "Executing revision pass with agy..." agy --dangerously-skip-permissions --print "${REVISE_PROMPT}" || true
                     log_info "Revision applied."
+
+                    # Distil and append the preference to the system prompt dynamically
+                    LEARN_PROMPT="Read '${SYSTEM_PROMPT_FILE}' and user instruction: '${USER_FEEDBACK}'. Extract the core factual constraint or negative rule (e.g. 'Never state candidate has X'). Add it as a new bullet point under the '## 1. C. Factual Boundaries & Excluded Experience' section of '${SYSTEM_PROMPT_FILE}'. Modify the file '${SYSTEM_PROMPT_FILE}' directly, adding only the bullet point constraint under that section."
+                    run_with_spinner "Learning and saving new preference to system prompt..." agy --dangerously-skip-permissions --print "${LEARN_PROMPT}" || true
                 fi
                 ;;
             4)
@@ -1031,6 +1035,34 @@ fi
 # STEP 7: Headless PDF Generation & Persistent Local Preview Creation
 # ------------------------------------------------------------------------------
 if [[ -f "${OUTPUT_CV_HTML}" ]]; then
+    # Inject user theme/layout customization from config
+    if [[ -f "${PDF_CUSTOM_FILE}" ]]; then
+        local target_theme
+        local target_lang
+        local target_rodo
+        target_theme="$(grep -oP '"theme":\s*"\K[^"]+' "${PDF_CUSTOM_FILE}" 2>/dev/null || echo "theme-blue")"
+        target_lang="$(grep -oP '"language":\s*"\K[^"]+' "${PDF_CUSTOM_FILE}" 2>/dev/null || echo "en")"
+        target_rodo="$(grep -oP '"rodo":\s*"\K[^"]+' "${PDF_CUSTOM_FILE}" 2>/dev/null || echo "universal")"
+
+        local inject_js
+        inject_js="<script>
+        (function() {
+            setTimeout(function() {
+                if (typeof applyTheme === 'function') applyTheme('${target_theme}');
+                if (typeof toggleLang === 'function') toggleLang('${target_lang}');
+                const rodoSelect = document.getElementById('rodo-config');
+                if (rodoSelect) {
+                    rodoSelect.value = '${target_rodo}';
+                    if (typeof refreshRodoClause === 'function') refreshRodoClause();
+                }
+            }, 50);
+        })();
+        </script>"
+        
+        # Insert configuration JS before body close tag
+        sed -i "s|</body>|${inject_js/\\n/ }</body>|g" "${OUTPUT_CV_HTML}"
+    fi
+
     run_with_spinner "Rendering pixel-perfect headless PDFs..." google-chrome-stable --headless --disable-gpu --print-to-pdf="${OUTPUT_DIR}/cv_en.pdf" "file://${OUTPUT_CV_HTML}" || true
     google-chrome-stable --headless --disable-gpu --print-to-pdf="${OUTPUT_DIR}/cv_pl.pdf" "file://${OUTPUT_CV_HTML}" &>/dev/null || true
     log_info "Rendered './output/cv_en.pdf' & './output/cv_pl.pdf'"
