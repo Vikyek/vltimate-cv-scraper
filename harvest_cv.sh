@@ -819,28 +819,33 @@ fi
 if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" ]]; then
     if [[ -f "${ENCRYPTED_ARCHIVE}" ]]; then
         log_info "Encrypted personal archive detected: './personal_data.tar.gz.enc'"
-        if [[ -n "${DECRYPT_PASS:-}" ]]; then
-            log_info "Using decryption password from environment variable."
-        else
-            DECRYPT_PASS="$(read_secret "${G_KEY} Enter decryption password: ")"
-        fi
+        while true; do
+            if [[ -n "${DECRYPT_PASS:-}" ]]; then
+                log_info "Using decryption password from environment variable."
+            else
+                DECRYPT_PASS="$(read_secret "${G_KEY} Enter decryption password: ")"
+            fi
 
-        TEMP_TAR="$(mktemp --suffix=.tar.gz)"
-        if openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 -in "${ENCRYPTED_ARCHIVE}" -out "${TEMP_TAR}" -pass pass:"${DECRYPT_PASS}" 2>/dev/null; then
-            log_info "Archive decrypted successfully! Unpacking data tree..."
-            tar -xzf "${TEMP_TAR}" -C "${SCRIPT_DIR}"
-            rm -f "${TEMP_TAR}"
-            save_checkpoint "STATE_DECRYPTED"
-        elif gpg --decrypt --batch --passphrase "${DECRYPT_PASS}" "${ENCRYPTED_ARCHIVE}" > "${TEMP_TAR}" 2>/dev/null; then
-            log_info "GPG Archive decrypted successfully! Unpacking data tree..."
-            tar -xzf "${TEMP_TAR}" -C "${SCRIPT_DIR}"
-            rm -f "${TEMP_TAR}"
-            save_checkpoint "STATE_DECRYPTED"
-        else
-            log_err "Decryption failed: Invalid password or corrupted archive."
-            rm -f "${TEMP_TAR}"
-            exit 1
-        fi
+            TEMP_TAR="$(mktemp --suffix=.tar.gz)"
+            if openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 -in "${ENCRYPTED_ARCHIVE}" -out "${TEMP_TAR}" -pass pass:"${DECRYPT_PASS}" 2>/dev/null; then
+                log_info "Archive decrypted successfully! Unpacking data tree..."
+                tar -xzf "${TEMP_TAR}" -C "${SCRIPT_DIR}"
+                rm -f "${TEMP_TAR}"
+                save_checkpoint "STATE_DECRYPTED"
+                break
+            elif gpg --decrypt --batch --passphrase "${DECRYPT_PASS}" "${ENCRYPTED_ARCHIVE}" > "${TEMP_TAR}" 2>/dev/null; then
+                log_info "GPG Archive decrypted successfully! Unpacking data tree..."
+                tar -xzf "${TEMP_TAR}" -C "${SCRIPT_DIR}"
+                rm -f "${TEMP_TAR}"
+                save_checkpoint "STATE_DECRYPTED"
+                break
+            else
+                log_err "Decryption failed: Invalid password or corrupted archive."
+                rm -f "${TEMP_TAR}"
+                unset DECRYPT_PASS
+                echo ""
+            fi
+        done
     fi
 
     # Snapshot & Input Subdirectory Rotation
