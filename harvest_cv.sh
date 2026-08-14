@@ -1063,8 +1063,8 @@ if [[ -f "${OUTPUT_CV_HTML}" ]]; then
         sed -i "s|</body>|${inject_js/\\n/ }</body>|g" "${OUTPUT_CV_HTML}"
     fi
 
-    run_with_spinner "Rendering pixel-perfect headless PDFs..." google-chrome-stable --headless --disable-gpu --print-to-pdf="${OUTPUT_DIR}/cv_en.pdf" "file://${OUTPUT_CV_HTML}" || true
-    google-chrome-stable --headless --disable-gpu --print-to-pdf="${OUTPUT_DIR}/cv_pl.pdf" "file://${OUTPUT_CV_HTML}" &>/dev/null || true
+    run_with_spinner "Rendering pixel-perfect headless PDFs..." google-chrome-stable --headless --disable-gpu --no-pdf-header-footer --print-to-pdf="${OUTPUT_DIR}/cv_en.pdf" "file://${OUTPUT_CV_HTML}" || true
+    google-chrome-stable --headless --disable-gpu --no-pdf-header-footer --print-to-pdf="${OUTPUT_DIR}/cv_pl.pdf" "file://${OUTPUT_CV_HTML}" &>/dev/null || true
     log_info "Rendered './output/cv_en.pdf' & './output/cv_pl.pdf'"
     save_checkpoint "STATE_PDF_RENDERED"
 
