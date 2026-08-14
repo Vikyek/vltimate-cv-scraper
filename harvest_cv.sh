@@ -979,7 +979,7 @@ fi
 # ------------------------------------------------------------------------------
 # STEP 6: Interactive Prompt Refinement Menu
 # ------------------------------------------------------------------------------
-if [[ "${INTERACTIVE_LOOP}" == "true" ]]; then
+if [[ "${INTERACTIVE_LOOP}" == "true" && ( -z "${RESUME_STATE}" || ( "${RESUME_STATE}" != "STATE_REVISION_APPROVED" && "${RESUME_STATE}" != "STATE_PDF_RENDERED" && "${RESUME_STATE}" != "STATE_ENCRYPTED" ) ) ]]; then
     while true; do
         echo ""
         read -r -p "👁️  Preview HTML resume in browser before deciding? [Y/n]: " PREV_CHOICE || PREV_CHOICE="y"
@@ -1038,7 +1038,7 @@ fi
 # ------------------------------------------------------------------------------
 # STEP 7: Headless PDF Generation & Persistent Local Preview Creation
 # ------------------------------------------------------------------------------
-if [[ -f "${OUTPUT_CV_HTML}" ]]; then
+if [[ -f "${OUTPUT_CV_HTML}" && ( -z "${RESUME_STATE}" || ( "${RESUME_STATE}" != "STATE_PDF_RENDERED" && "${RESUME_STATE}" != "STATE_ENCRYPTED" ) ) ]]; then
     # Inject user theme/layout customization from config
     if [[ -f "${PDF_CUSTOM_FILE}" ]]; then
         target_theme="$(grep -oP '"theme":\s*"\K[^"]+' "${PDF_CUSTOM_FILE}" 2>/dev/null || echo "theme-blue")"
@@ -1066,7 +1066,12 @@ if [[ -f "${OUTPUT_CV_HTML}" ]]; then
     log_info "Saved persistent local preview to './local_preview/'"
 fi
 
-if [[ "${ENABLE_DIFF}" == "true" && -f "${INPUT_PROFILE}" && -f "${OUTPUT_PROFILE}" ]]; then
+if [[ "${RESUME_STATE}" == "STATE_ENCRYPTED" ]]; then
+    log_info "Personal data already encrypted. Workflow complete."
+    exit 0
+fi
+
+if [[ "${ENABLE_DIFF}" == "true" && -f "${INPUT_PROFILE}" && -f "${OUTPUT_PROFILE}" && ( -z "${RESUME_STATE}" || "${RESUME_STATE}" != "STATE_ENCRYPTED" ) ]]; then
     log_info "Visual Experience Diff Tracking..."
     {
         echo "=== Vltimate CV Scraper Diff Report: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
@@ -1078,11 +1083,13 @@ fi
 # ------------------------------------------------------------------------------
 # STEP 8: DEFAULT ENCRYPTION POLICY & SECURITY CLEANUP (Default: YES)
 # ------------------------------------------------------------------------------
-echo ""
-read -r -p "${G_LOCK} Pack and encrypt personal results now? [Y/n]: " PACK_CHOICE || PACK_CHOICE="Y"
-PACK_CHOICE="${PACK_CHOICE:-Y}"
+if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" != "STATE_ENCRYPTED" ]]; then
+    echo ""
+    read -r -p "${G_LOCK} Pack and encrypt personal results now? [Y/n]: " PACK_CHOICE || PACK_CHOICE="Y"
+    PACK_CHOICE="${PACK_CHOICE:-Y}"
+fi
 
-if [[ "${PACK_CHOICE}" =~ ^[Yy](es)?$ ]]; then
+if [[ "${PACK_CHOICE:-}" =~ ^[Yy](es)?$ && ( -z "${RESUME_STATE}" || "${RESUME_STATE}" != "STATE_ENCRYPTED" ) ]]; then
     # Interactive encryption method selection if not passed via CLI flag
     if [[ "${ENCRYPT_MODE}" == "aes" ]]; then
         echo "${G_KEY} Select encryption method:"
