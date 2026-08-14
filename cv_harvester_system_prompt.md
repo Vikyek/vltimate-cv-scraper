@@ -129,9 +129,10 @@ curl -s "https://registry.npmjs.org/-/v1/search?text=author:${USERNAME}" 2>/dev/
 curl -s "https://pypi.org/pypi?%3Aaction=search&term=${USERNAME}" 2>/dev/null || true
 
 # 5. Extract Linked Profiles & External Sites (Personal Webpage, LinkedIn, Twitter/X, Medium, DEV.to, Hashnode, GitLab, Codeberg, StackOverflow, Kaggle)
-# Follow linked URLs recursively to scrape candidate-authored technical content, project writeups, certifications, and skills.
+# Maintain a unified list of profiles: any newly discovered profile from any page is added to this list as a new entry point. Follow links recursively, tracking visited URLs to prevent loops.
+# Inspect local directories, repositories, and config files for handles or hidden profiles that are unreferenced online. Scrape them and report findings or clues to the user.
 ```
-- **Attribution & Scope Boundary**: Scrape candidate-authored data, project writeups, bio details, stats, badges, and skills across all linked sites. Ignore third-party noise, unrelated comments, or external non-candidate content.
+- **Attribution & Scope Boundary**: Scrape candidate-authored data, project writeups, bio details, stats, badges, and skills across all linked sites. Ignore third-party noise, unrelated comments, or external non-candidate content. If disjointed profiles/sources are found locally but unreferenced online, verify them and report them to the user.
 
 ### Step 3: Input Subdirectory & Previous Baseline Inspection
 - Read previous baseline technical data from `input/raw_technical_profile.md` if available to build upon and expand.

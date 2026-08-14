@@ -171,6 +171,15 @@
       border-color: var(--primary-color) !important;
       box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.15);
     }
+    
+    /* Prevent Flash of Unstyled Content (FOUC) from Tailwind CDN */
+    body {
+      opacity: 0;
+      transition: opacity 0.15s ease-in;
+    }
+    body.tailwind-ready {
+      opacity: 1;
+    }
   </style>
 </head>
 <body class="theme-blue">
@@ -620,6 +629,15 @@
 
     window.onload = function() {
       refreshRodoClause();
+      
+      // Parse query params to override language for isolated PDF generation
+      const urlParams = new URLSearchParams(window.location.search);
+      const printLang = urlParams.get('printLang');
+      if (printLang === 'en' || printLang === 'pl') {
+        toggleLang(printLang);
+      }
+
+      document.body.classList.add('tailwind-ready');
     };
   </script>
 </body>
