@@ -1037,30 +1037,15 @@ fi
 if [[ -f "${OUTPUT_CV_HTML}" ]]; then
     # Inject user theme/layout customization from config
     if [[ -f "${PDF_CUSTOM_FILE}" ]]; then
-        local target_theme
-        local target_lang
-        local target_rodo
         target_theme="$(grep -oP '"theme":\s*"\K[^"]+' "${PDF_CUSTOM_FILE}" 2>/dev/null || echo "theme-blue")"
         target_lang="$(grep -oP '"language":\s*"\K[^"]+' "${PDF_CUSTOM_FILE}" 2>/dev/null || echo "en")"
+        target_view_mode="$(grep -oP '"viewMode":\s*"\K[^"]+' "${PDF_CUSTOM_FILE}" 2>/dev/null || echo "a4")"
         target_rodo="$(grep -oP '"rodo":\s*"\K[^"]+' "${PDF_CUSTOM_FILE}" 2>/dev/null || echo "universal")"
 
-        local inject_js
-        inject_js="<script>
-        (function() {
-            setTimeout(function() {
-                if (typeof applyTheme === 'function') applyTheme('${target_theme}');
-                if (typeof toggleLang === 'function') toggleLang('${target_lang}');
-                const rodoSelect = document.getElementById('rodo-config');
-                if (rodoSelect) {
-                    rodoSelect.value = '${target_rodo}';
-                    if (typeof refreshRodoClause === 'function') refreshRodoClause();
-                }
-            }, 50);
-        })();
-        </script>"
+        inject_js="<script>(function(){setTimeout(function(){if(typeof applyTheme==='function')applyTheme('${target_theme}');if(typeof toggleLang==='function')toggleLang('${target_lang}');if(typeof toggleViewMode==='function')toggleViewMode('${target_view_mode}');const rs=document.getElementById('rodo-config');if(rs){rs.value='${target_rodo}';if(typeof refreshRodoClause==='function')refreshRodoClause();}},50);})();</script>"
         
         # Insert configuration JS before body close tag
-        sed -i "s|</body>|${inject_js/\\n/ }</body>|g" "${OUTPUT_CV_HTML}"
+        sed -i "s|</body>|${inject_js}</body>|g" "${OUTPUT_CV_HTML}"
     fi
 
     run_with_spinner "Rendering pixel-perfect headless PDFs..." google-chrome-stable --headless --disable-gpu --no-pdf-header-footer --print-to-pdf="${OUTPUT_DIR}/cv_en.pdf" "file://${OUTPUT_CV_HTML}" || true

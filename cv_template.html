@@ -559,7 +559,9 @@
       document.body.className = className;
     }
 
+    let currentViewMode = 'a4';
     function toggleViewMode(mode) {
+      currentViewMode = mode;
       const pages = document.querySelectorAll('.cv-page');
       const a4Btn = document.getElementById('view-a4-btn');
       const fluidBtn = document.getElementById('view-fluid-btn');
@@ -602,6 +604,7 @@
       const config = {
         theme: currentTheme,
         language: currentLanguage,
+        viewMode: currentViewMode,
         targetTranslationLang: targetTranslationLang,
         rodo: document.getElementById('rodo-config') ? document.getElementById('rodo-config').value : 'universal',
         timestamp: new Date().toISOString()
