@@ -958,6 +958,10 @@ if [[ -f "${OUTPUT_PROFILE}" ]]; then
                 if grep -q '"has_conflicts": false' "${AUDIT_FILE}" 2>/dev/null || grep -q '"has_conflicts":false' "${AUDIT_FILE}" 2>/dev/null; then
                     HAS_CONFLICTS="false"
                     log_info "${G_CHECK} Conflict successfully resolved!"
+
+                    # Distil and append the preference to the system prompt dynamically
+                    LEARN_PROMPT="Read '${SYSTEM_PROMPT_FILE}' and user instruction: '${RESOLUTION_INPUT}'. Extract the core factual constraint or negative rule (e.g. 'Never state candidate has X'). Add it as a new bullet point under the '## 1. C. Factual Boundaries & Excluded Experience' section of '${SYSTEM_PROMPT_FILE}'. Modify the file '${SYSTEM_PROMPT_FILE}' directly, adding only the bullet point constraint under that section."
+                    run_with_spinner "Learning and saving conflict resolution preference to system prompt..." agy --dangerously-skip-permissions --print "${LEARN_PROMPT}" || true
                 else
                     log_warn "Re-audit indicates lingering conflicts. Please provide additional resolution detail."
                 fi
