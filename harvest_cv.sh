@@ -27,6 +27,7 @@ PDF_CUSTOM_FILE="${CONFIG_DIR}/pdf_customization.json"
 CHECKPOINT_FILE="${CONFIG_DIR}/checkpoint.json"
 DIFF_LOG_FILE="${SCRIPT_DIR}/harvest_diff.log"
 AUDIT_FILE="${CONFIG_DIR}/conflict_audit.json"
+VAULT_KEY_FILE="${CONFIG_DIR}/vault_key.txt"
 VAULT_DIR="${SCRIPT_DIR}/.vault_tmp"
 
 SYSTEM_PROMPT_FILE="${SCRIPT_DIR}/cv_harvester_system_prompt.md"
@@ -704,49 +705,43 @@ EOF
         log_warn "No HTML resume or template found to open. Skipping GUI."
     fi
     echo ""
-    read -r -p "${G_GUI} Adjust options in Chrome, click 'Save Config', then press Enter to continue: " _UNUSED || true
     
-    # Auto-pick up downloaded customization config or enter fallback retry loop
+    # Polling loop to auto-detect new config downloads
+    START_TIME=$(date +%s)
+    START_TIME=$((START_TIME - 2))
+    
+    log_info "Waiting for layout options to be saved in Chrome (Save Config)..."
+    log_info "Polling ~/Downloads for new configs. Press Enter to skip and continue."
+    
+    DETECTED=""
     while true; do
-        if pickup_downloaded_customization; then
-            break
-        else
-            echo ""
-            echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
-            log_warn "${G_WARN} No new exported customization config file detected in ~/Downloads/!"
-            echo -e "${C_CYAN}════════════════════════════════════════════════════════════════════════${C_RESET}"
-            echo "Instructions: In Chrome, click 'Save Config' to export 'pdf_customization.json'."
-            echo ""
-            echo "Options:"
-            echo "  1) Retry auto-detecting in ~/Downloads/ (if download was delayed)"
-            echo "  2) Enter file path or directory path manually"
-            echo "  3) Continue using current/default customization config"
-            read -r -p "Select option [1-3] (Default: 1): " FALLBACK_CHOICE || FALLBACK_CHOICE="1"
-            FALLBACK_CHOICE="${FALLBACK_CHOICE:-1}"
-
-            case "${FALLBACK_CHOICE}" in
-                1)
-                    log_info "Re-checking ~/Downloads/..."
-                    sleep 0.5
-                    ;;
-                2)
-                    read -r -p "${G_GUI} Enter file or directory path: " MANUAL_PATH || MANUAL_PATH=""
-                    if [[ -n "${MANUAL_PATH}" ]]; then
-                        if search_and_move_customization "${MANUAL_PATH}"; then
-                            break
-                        else
-                            log_warn "Could not find any 'pdf_customization*.json' at '${MANUAL_PATH}'."
+        for search_path in "${HOME}/Downloads" "${SCRIPT_DIR}" "${HOME}/Desktop"; do
+            if [[ -d "${search_path}" ]]; then
+                while IFS= read -r candidate; do
+                    if [[ -n "${candidate}" && -f "${candidate}" ]]; then
+                        mtime=$(stat -c %Y "${candidate}" 2>/dev/null || stat -f %m "${candidate}" 2>/dev/null || echo 0)
+                        if [[ ${mtime} -gt ${START_TIME} ]]; then
+                            DETECTED="${candidate}"
+                            break 2
                         fi
                     fi
-                    ;;
-                3)
-                    log_info "Continuing with configuration in './config/pdf_customization.json'."
-                    break
-                    ;;
-                *)
-                    log_warn "Invalid selection. Retrying..."
-                    ;;
-            esac
+                done < <(find "${search_path}" -maxdepth 2 \( -name "pdf_customization*.json" -o -name ".pdf_customization*.json" \) 2>/dev/null)
+            fi
+        done
+        
+        if [[ -n "${DETECTED}" ]]; then
+            if [[ ! "${DETECTED}" -ef "${PDF_CUSTOM_FILE}" ]]; then
+                mv -f "${DETECTED}" "${PDF_CUSTOM_FILE}"
+            fi
+            chmod 600 "${PDF_CUSTOM_FILE}"
+            echo ""
+            log_info "${G_CHECK} Detected new customization config: '${DETECTED}' -> './config/pdf_customization.json'"
+            break
+        fi
+        
+        if read -t 0.5 -r _UNUSED; then
+            log_info "Using current configuration in './config/pdf_customization.json'."
+            break
         fi
     done
 fi
@@ -822,6 +817,9 @@ if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" ]]; then
         while true; do
             if [[ -n "${DECRYPT_PASS:-}" ]]; then
                 log_info "Using decryption password from environment variable."
+            elif [[ -f "${VAULT_KEY_FILE}" ]]; then
+                DECRYPT_PASS="$(cat "${VAULT_KEY_FILE}")"
+                log_info "Using saved decryption key."
             else
                 DECRYPT_PASS="$(read_secret "${G_KEY} Enter decryption password: ")"
             fi
@@ -831,17 +829,22 @@ if [[ -z "${RESUME_STATE}" || "${RESUME_STATE}" == "STATE_DECRYPTED" ]]; then
                 log_info "Archive decrypted successfully! Unpacking data tree..."
                 tar -xzf "${TEMP_TAR}" -C "${SCRIPT_DIR}"
                 rm -f "${TEMP_TAR}"
+                echo -n "${DECRYPT_PASS}" > "${VAULT_KEY_FILE}"
+                chmod 600 "${VAULT_KEY_FILE}"
                 save_checkpoint "STATE_DECRYPTED"
                 break
             elif gpg --decrypt --batch --passphrase "${DECRYPT_PASS}" "${ENCRYPTED_ARCHIVE}" > "${TEMP_TAR}" 2>/dev/null; then
                 log_info "GPG Archive decrypted successfully! Unpacking data tree..."
                 tar -xzf "${TEMP_TAR}" -C "${SCRIPT_DIR}"
                 rm -f "${TEMP_TAR}"
+                echo -n "${DECRYPT_PASS}" > "${VAULT_KEY_FILE}"
+                chmod 600 "${VAULT_KEY_FILE}"
                 save_checkpoint "STATE_DECRYPTED"
                 break
             else
                 log_err "Decryption failed: Invalid password or corrupted archive."
                 rm -f "${TEMP_TAR}"
+                rm -f "${VAULT_KEY_FILE}" 2>/dev/null
                 unset DECRYPT_PASS
                 echo ""
             fi
@@ -1104,12 +1107,20 @@ if [[ "${PACK_CHOICE:-}" =~ ^[Yy](es)?$ && ( -z "${RESUME_STATE}" || "${RESUME_S
     if [[ -n "${ENCRYPT_PASS:-}" ]]; then
         log_info "Using encryption password from environment variable."
         ENCRYPT_PASS1="${ENCRYPT_PASS}"
+    elif [[ -n "${DECRYPT_PASS:-}" ]]; then
+        log_info "Re-using decryption password."
+        ENCRYPT_PASS1="${DECRYPT_PASS}"
+    elif [[ -f "${VAULT_KEY_FILE}" ]]; then
+        log_info "Re-using saved key for encryption."
+        ENCRYPT_PASS1="$(cat "${VAULT_KEY_FILE}")"
     else
         while true; do
             ENCRYPT_PASS1="$(read_secret "${G_KEY} Enter custom encryption password: ")"
             ENCRYPT_PASS2="$(read_secret "${G_KEY} Re-enter encryption password: ")"
 
             if [[ "${ENCRYPT_PASS1}" == "${ENCRYPT_PASS2}" && -n "${ENCRYPT_PASS1}" ]]; then
+                echo -n "${ENCRYPT_PASS1}" > "${VAULT_KEY_FILE}"
+                chmod 600 "${VAULT_KEY_FILE}"
                 break
             fi
             echo -e "${C_RED}❌ Invalid password or mismatch! Please try again.${C_RESET}\n"

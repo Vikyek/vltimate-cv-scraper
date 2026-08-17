@@ -7,7 +7,8 @@ An automated, privacy-conscious resume architecture, technical intelligence harv
 ## 🌟 Key Features
 
 - **Clean Console Output & Path Formatting**: Clean status messages without ISO timestamp clutter (unless `-v` / `--verbose` is passed). All file paths printed in quoted relative format (e.g. `'./output/'`, `'./personal_data.tar.gz.enc'`).
-- **Layout Customization Memory & GUI Re-Use**: Detects existing `'./.pdf_customization.json'` layout settings and asks whether to re-open Chrome HTML GUI or re-use existing choices.
+- **Layout Customization Memory & Polling GUI**: Detects existing `'./config/pdf_customization.json'` layout settings. When updating via Chrome GUI, it automatically polls and detects newly downloaded config files using timestamp validation (ignoring old configs) to continue execution instantly.
+- **Local Key Caching & Auto-Decryption**: Stores the encryption/decryption key securely in a local, gitignored file (`'./config/vault_key.txt'`) upon first successful access to automate decrypt/encrypt steps in subsequent runs.
 - **Environment Variable Auto-Detection**: Automatically detects `DECRYPT_PASS`, `ENCRYPT_PASS`, and `GH_TOKEN` from your shell environment to bypass manual prompts in non-interactive runs.
 - **Interactive Encryption Method Selector**: Prompts for encryption method selection (`OpenSSL AES-256` or `GPG key`) with standard `[Y/n]` default prompt.
 - **Interactive Refinement & Conflict Resolution Loop (`-i`, `--interactive`)**: Menu allowing you to prompt `agy` to resolve technical conflicts, expand specific sections, or add custom pointers/notes live before finalizing PDFs and encryption.

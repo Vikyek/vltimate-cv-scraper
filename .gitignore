@@ -24,6 +24,7 @@ config/vltimate_config.env
 config/pdf_customization.json
 config/conflict_audit.json
 config/checkpoint.json
+config/vault_key.txt
 
 # Whitelist: config templates ARE tracked
 !config/config.template.env
