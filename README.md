@@ -1,6 +1,27 @@
 # Vltimate CV Scraper v3.0
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 An automated, privacy-conscious resume architecture, technical intelligence harvester, and job-tailoring suite built for software engineers, game developers, and systems specialists. Powered by **Antigravity CLI (`agy`)**, **OpenSSL AES-256 / GPG encryption**, **Google Chrome headless PDF rendering**, and **Tailwind CSS single-column ATS layout engine**.
+
+---
+
+## 📋 Requirements & Prerequisites
+
+- **Shell:** `bash` (4.0+)
+- **Security & Encryption:**
+  - `openssl` (for AES-256 encryption)
+  - `gnupg` (for GPG key-based encryption)
+- **Rendering & Headless Browser:**
+  - `google-chrome` or `chromium` (for headless PDF rendering)
+  - `fontconfig` and `noto-fonts-emoji` (for font and emoji symbol rendering)
+- **AI Agent Engine:**
+  - `agy` (Antigravity CLI)
+
+Install dependencies on Arch Linux:
+```bash
+sudo pacman -S bash openssl gnupg chromium fontconfig noto-fonts-emoji
+```
 
 ---
 
@@ -52,11 +73,31 @@ An automated, privacy-conscious resume architecture, technical intelligence harv
 
 ---
 
-## 🚀 CLI Usage & Options
+## 🚀 Installation & Setup
+
+### Automated Installation
+```bash
+git clone https://github.com/Vikyek/vltimate-cv-scraper.git
+cd vltimate-cv-scraper
+chmod +x install.sh
+./install.sh
+```
+
+### Manual Installation
+```bash
+mkdir -p ~/.local/bin ~/.local/share/man/man1
+chmod +x harvest_cv.sh
+ln -s "$(pwd)/harvest_cv.sh" ~/.local/bin/vltimate-cv-scraper
+install -Dm644 man/man1/vltimate-cv-scraper.1 ~/.local/share/man/man1/vltimate-cv-scraper.1
+```
+
+---
+
+## 💻 CLI Usage & Options
 
 ```text
 USAGE:
-  ./harvest_cv.sh [OPTIONS]
+  harvest_cv.sh [OPTIONS]
 
 OPTIONS:
   -h, --help                Show help documentation
@@ -70,11 +111,22 @@ OPTIONS:
   -c, --config              Reconfigure GitHub token & private cloud sync options
 ```
 
+### Examples
+```bash
+# Standard interactive harvest & PDF generation
+./harvest_cv.sh -p -i
+
+# Tailor resume for a specific job description
+./harvest_cv.sh -t job_posting.txt -p
+```
+
 ---
 
 ## 📖 UNIX Man Page
 To view the manual page:
 ```bash
+man vltimate-cv-scraper
+# Or from project directory:
 man ./man/man1/vltimate-cv-scraper.1
 ```
 
@@ -82,3 +134,8 @@ man ./man/man1/vltimate-cv-scraper.1
 
 ## 🔐 Security & Privacy Note
 Sensitive data, personal contact details, subdirectories (`input/`, `output/`, `archives/`, `devel/`, `.agents/`), credentials (`.vltimate_config.env`), and customization settings (`.pdf_customization.json`) are strictly excluded from git tracking via `.gitignore`.
+
+---
+
+## 📄 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
